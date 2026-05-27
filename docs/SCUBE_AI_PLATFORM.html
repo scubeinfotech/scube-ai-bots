@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCUBE AI — Intelligent Chatbot Platform</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    mermaid.initialize({
+        startOnLoad: true,
+        theme: 'base',
+        themeVariables: {
+            primaryColor: '#2B6DE2',
+            primaryTextColor: '#fff',
+            primaryBorderColor: '#1a4a9e',
+            lineColor: '#2B6DE2',
+            secondaryColor: '#23B7D9',
+            tertiaryColor: '#67C85A',
+            fontSize: '14px'
+        }
+    });
+});
+</script>
+<style>
+:root {
+    --blue: #2B6DE2;
+    --teal: #23B7D9;
+    --green: #67C85A;
+    --dark: #163B72;
+    --gray: #4B5563;
+    --light-gray: #F3F4F6;
+    --white: #FFFFFF;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+    color: var(--gray);
+    line-height: 1.7;
+    background: var(--light-gray);
+}
+
+/* Header */
+.header {
+    background: linear-gradient(135deg, var(--dark) 0%, #1a4a9e 50%, var(--blue) 100%);
+    color: var(--white);
+    padding: 40px 0 30px;
+    text-align: center;
+}
+
+.header .logo svg { max-width: 320px; height: auto; }
+
+.header h1 {
+    font-size: 28px;
+    font-weight: 300;
+    margin-top: 10px;
+    letter-spacing: 2px;
+    opacity: 0.9;
+}
+
+/* Container */
+.container { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+
+/* Sections */
+.section {
+    background: var(--white);
+    margin: 24px auto;
+    max-width: 960px;
+    border-radius: 12px;
+    padding: 40px 48px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.section h2 {
+    font-size: 24px;
+    color: var(--dark);
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 3px solid var(--teal);
+}
+
+.section h3 {
+    font-size: 18px;
+    color: var(--blue);
+    margin: 24px 0 12px;
+}
+
+.section p { margin-bottom: 16px; font-size: 15px; }
+
+/* Star badge */
+.star-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #EAB308, #F59E0B);
+    color: #000;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    vertical-align: middle;
+    margin-left: 8px;
+}
+
+/* Tables */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-size: 14px;
+}
+
+th {
+    background: var(--dark);
+    color: var(--white);
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+}
+
+td {
+    padding: 10px 16px;
+    border-bottom: 1px solid #E5E7EB;
+}
+
+tr:hover td { background: var(--light-gray); }
+
+/* Problem/Impact table */
+.problem-table td:first-child { font-weight: 600; color: var(--dark); }
+
+/* Feature table */
+.feature-table td:first-child { font-weight: 600; color: var(--blue); }
+.feature-table td:not(:first-child) { text-align: center; }
+
+.check { color: var(--green); font-weight: 700; }
+.cross { color: #EF4444; }
+
+/* Mermaid containers */
+.mermaid-container {
+    background: var(--light-gray);
+    border-radius: 8px;
+    padding: 24px;
+    margin: 20px 0;
+    overflow-x: auto;
+}
+
+.mermaid { text-align: center; }
+
+/* Benefit cards */
+.benefit-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 20px 0;
+}
+
+.benefit-card {
+    background: var(--light-gray);
+    border-left: 4px solid var(--blue);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+}
+
+.benefit-card h4 {
+    font-size: 14px;
+    color: var(--dark);
+    margin-bottom: 4px;
+}
+
+.benefit-card p {
+    font-size: 13px;
+    margin: 0;
+    color: #6B7280;
+}
+
+/* ROI grid */
+.roi-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 20px 0;
+}
+
+.roi-card {
+    background: var(--light-gray);
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.roi-card .metric {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--blue);
+    margin-bottom: 4px;
+}
+
+.roi-card .label {
+    font-size: 13px;
+    color: #6B7280;
+}
+
+/* Footer */
+.footer {
+    background: var(--dark);
+    color: var(--white);
+    padding: 40px 24px;
+    text-align: center;
+    margin-top: 40px;
+}
+
+.footer .logo-small svg { max-width: 200px; height: auto; }
+
+.footer .contact {
+    margin-top: 20px;
+    font-size: 14px;
+    line-height: 2;
+    opacity: 0.9;
+}
+
+.footer .contact a {
+    color: var(--teal);
+    text-decoration: none;
+}
+
+.footer .contact a:hover { text-decoration: underline; }
+
+.footer .tagline {
+    margin-top: 20px;
+    font-size: 13px;
+    opacity: 0.6;
+    letter-spacing: 1px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .section { padding: 24px 20px; }
+    .benefit-grid, .roi-grid { grid-template-columns: 1fr; }
+    table { font-size: 12px; }
+    th, td { padding: 8px 10px; }
+    .header h1 { font-size: 20px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+    <div class="container">
+        <div class="logo">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 220" width="320" role="img">
+                <defs>
+                    <linearGradient id="gBT" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#2B6DE2"/>
+                        <stop offset="55%" stop-color="#23B7D9"/>
+                        <stop offset="100%" stop-color="#67C85A"/>
+                    </linearGradient>
+                    <style>
+                        .wm { font-family: "Segoe UI","Trebuchet MS",Arial,sans-serif; font-weight: 800; letter-spacing: 1px; }
+                        .sl { font-family: "Segoe UI",Arial,sans-serif; font-size: 28px; fill: #8F97A3; letter-spacing: 0.7px; }
+                    </style>
+                </defs>
+                <g transform="translate(26,16)">
+                    <path d="M84 12L148 44V116L84 148L20 116V44Z" fill="none" stroke="url(#gBT)" stroke-width="5" stroke-linejoin="round"/>
+                    <path d="M84 12V148" fill="none" stroke="url(#gBT)" stroke-width="5" stroke-linecap="round"/>
+                    <path d="M20 44L84 76L148 44" fill="none" stroke="url(#gBT)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <g fill="none" stroke="url(#gBT)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M30 84H54L68 96H84"/><path d="M30 98H48"/><path d="M30 112H58L72 122H84"/>
+                        <path d="M84 96H100L112 86H138"/><path d="M84 118H98L114 106H138"/><path d="M84 132H104L120 122H138"/>
+                    </g>
+                    <g fill="url(#gBT)">
+                        <circle cx="30" cy="84" r="4.5"/><circle cx="30" cy="98" r="4.5"/><circle cx="30" cy="112" r="4.5"/>
+                        <circle cx="138" cy="86" r="4.5"/><circle cx="138" cy="106" r="4.5"/><circle cx="138" cy="122" r="4.5"/>
+                    </g>
+                </g>
+                <g transform="translate(200,44)">
+                    <text x="0" y="74" class="wm" font-size="88" fill="#163B72">SCUBE</text>
+                    <text x="338" y="74" class="wm" font-size="88" fill="#67C85A">AI</text>
+                    <text x="250" y="124" class="sl" text-anchor="middle">Intelligent Solutions</text>
+                </g>
+            </svg>
+        </div>
+        <h1>Intelligent Chatbot Platform</h1>
+    </div>
+</div>
+
+<!-- 1. Executive Summary -->
+<div class="section">
+    <h2>Executive Summary</h2>
+    <p>SCUBE AI is a unified intelligent chatbot platform that serves your customers across <strong>website widget</strong> and <strong>WhatsApp</strong> — all powered by a single AI engine that <strong>learns and improves automatically</strong>. Unlike static chatbot builders, SCUBE AI scores every response, detects failure patterns, silently tests better alternatives, and deploys improvements — all with admin approval. Your chatbot gets smarter every day without you lifting a finger.</p>
+</div>
+
+<!-- 2. The Communication Challenge -->
+<div class="section">
+    <h2>The Communication Challenge</h2>
+    <table class="problem-table">
+        <thead>
+            <tr><th>Problem</th><th>Impact</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Scattered customer conversations across web and WhatsApp</td><td>No unified view, inconsistent responses</td></tr>
+            <tr><td>Chatbots give the same wrong answers repeatedly</td><td>Customer frustration, brand damage</td></tr>
+            <tr><td>No visibility into quality or recurring failures</td><td>Blind to problems, reactive fixes only</td></tr>
+            <tr><td>High support costs with no improvement loop</td><td>Static costs, no path to efficiency</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- 3. One Platform, Every Channel -->
+<div class="section">
+    <h2>One Platform, Every Channel</h2>
+    <p>SCUBE AI unifies your customer conversations under one intelligent engine.</p>
+    <div class="mermaid-container">
+        <div class="mermaid">
+graph LR
+    A[Customer] --> B{Channel}
+    B --> C[Website Widget]
+    B --> D[WhatsApp]
+    C --> E[SCUBE AI Engine]
+    D --> E
+    E --> F[Knowledge Base]
+    E --> G[Multi-LLM Response]
+    G --> H[Response Delivered]
+    H --> I[Quality Scored]
+    I --> J[Dashboard &amp; Insights]
+    style E fill:#2B6DE2,color:#fff
+    style I fill:#67C85A,color:#fff
+        </div>
+    </div>
+    <h3>Key Benefits</h3>
+    <table>
+        <thead><tr><th>Benefit</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td>Single AI engine</td><td>Consistent answers across all channels</td></tr>
+            <tr><td>Customer context follows</td><td>Seamless experience between web and WhatsApp</td></tr>
+            <tr><td>One dashboard</td><td>Monitor all conversations in one place</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- 4. The Self-Learning Engine -->
+<div class="section">
+    <h2>The Self-Learning Engine <span class="star-badge">⭐ CORE FEATURE</span></h2>
+    <p><strong>This is our core differentiator.</strong> No other platform does this out of the box.</p>
+    <div class="mermaid-container">
+        <div class="mermaid">
+graph TD
+    A[Live Chat Response] --> B[LLM Judge Scores Quality]
+    B --> C{Score ≥ 0.5?}
+    C -->|Yes| D[Store &amp; Continue]
+    C -->|No| E[Pattern Detector]
+    E --> F[Cluster Similar Failures]
+    F --> G[Shadow Evaluator]
+    G --> H[Test Better Prompt Variants Silently]
+    H --> I{Candidate Improves ≥ 10%?}
+    I -->|Yes| J[Admin Approval Request]
+    J --> K{Admin Approves?}
+    K -->|Yes| L[Improvement Deployed]
+    K -->|No| M[Rejected - No Change]
+    L --> A
+    style B fill:#EAB308,color:#000
+    style G fill:#2B6DE2,color:#fff
+    style J fill:#67C85A,color:#fff
+    style L fill:#22C55E,color:#fff
+        </div>
+    </div>
+    <h3>What This Means for Your Business</h3>
+    <div class="benefit-grid">
+        <div class="benefit-card">
+            <h4>Auto-scoring</h4>
+            <p>Every response evaluated across 5 dimensions: relevance, accuracy, completeness, conciseness, tone</p>
+        </div>
+        <div class="benefit-card">
+            <h4>Pattern detection</h4>
+            <p>Systematic failures are automatically clustered and surfaced — see root causes, not symptoms</p>
+        </div>
+        <div class="benefit-card">
+            <h4>Silent testing</h4>
+            <p>The system tries better prompt variants in the background, zero impact on live customers</p>
+        </div>
+        <div class="benefit-card">
+            <h4>Admin approval gate</h4>
+            <p>Nothing changes without your approval — full control, full visibility</p>
+        </div>
+        <div class="benefit-card" style="grid-column: 1 / -1;">
+            <h4>Continuous improvement</h4>
+            <p>The platform gets measurably better every day, automatically</p>
+        </div>
+    </div>
+</div>
+
+<!-- 5. Always On, Always Accurate -->
+<div class="section">
+    <h2>Always On, Always Accurate</h2>
+    <div class="mermaid-container">
+        <div class="mermaid">
+graph LR
+    A[Customer Query] --> B{Primary LLM<br/>Gemini Flash}
+    B -->|Success| C[Response]
+    B -->|Fails| D{Secondary LLM<br/>GPT}
+    D -->|Success| C
+    D -->|Fails| E{Fallback LLM}
+    E -->|Success| C
+    E -->|Fails| F[Graceful Response]
+    style B fill:#2B6DE2,color:#fff
+    style D fill:#23B7D9,color:#fff
+    style E fill:#67C85A,color:#fff
+    style F fill:#EAB308,color:#000
+        </div>
+    </div>
+    <h3>Reliability Features</h3>
+    <table>
+        <thead><tr><th>Feature</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td>Multi-LLM fallback chain</td><td>If one AI provider fails, another takes over instantly</td></tr>
+            <tr><td>Auto-crawl knowledge base</td><td>SCUBE AI can automatically crawl your website to keep its knowledge up to date</td></tr>
+            <tr><td>Zero downtime</td><td>Docker-based deployment, no single point of failure</td></tr>
+            <tr><td>Docker containerized</td><td>Deploy on your infrastructure or ours</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- 6. Know What's Working -->
+<div class="section">
+    <h2>Know What's Working</h2>
+    <p>The admin dashboard gives you full visibility into your chatbot's performance.</p>
+    <div class="mermaid-container">
+        <div class="mermaid">
+graph TB
+    subgraph Dashboard
+        A[Quality Score<br/>Trend Chart] --- B[Summary Cards]
+        B --- C[Failure Patterns<br/>with Drill-down]
+        C --- D[Improvement<br/>Candidates]
+        D --- E[Pipeline Status<br/>&amp; Run Button]
+    end
+    F[Click Pattern] --> G[View Actual Messages<br/>with Scores]
+    H[Click Candidate] --> I[Compare Before/After<br/>Approve or Reject]
+    style A fill:#2B6DE2,color:#fff
+    style C fill:#EAB308,color:#000
+    style D fill:#67C85A,color:#fff
+        </div>
+    </div>
+    <h3>What You Can See at a Glance</h3>
+    <table>
+        <thead><tr><th>Feature</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td>Average quality score</td><td>Overall health of your chatbot</td></tr>
+            <tr><td>Failure patterns</td><td>Recurring issues clustered by topic, with drill-down to actual messages</td></tr>
+            <tr><td>Improvement candidates</td><td>Before/after comparisons ready for your approval</td></tr>
+            <tr><td>Quality trends</td><td>14-day charts showing improvement over time</td></tr>
+            <tr><td>Pipeline status</td><td>See when the self-learning engine last ran</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- 7. Competitive Comparison -->
+<div class="section">
+    <h2>Competitive Comparison</h2>
+    <div style="overflow-x: auto;">
+    <table class="feature-table">
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th><strong>SCUBE AI</strong></th>
+                <th>Dialogflow CX</th>
+                <th>Botpress</th>
+                <th>Rasa</th>
+                <th>Zendesk AI</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>Web Widget</td><td><span class="check">&#10003;</span> Built-in</td><td><span class="check">&#10003;</span></td><td><span class="check">&#10003;</span></td><td><span class="cross">&#10007;</span></td><td><span class="check">&#10003;</span></td></tr>
+            <tr><td>WhatsApp</td><td><span class="check">&#10003;</span> Native</td><td><span class="check">&#10003;</span></td><td><span class="check">&#10003;</span></td><td><span class="check">&#10003;</span></td><td><span class="check">&#10003;</span></td></tr>
+            <tr><td>Self-Learning Engine</td><td><span class="check">&#10003;</span> <strong>Built-in</strong></td><td><span class="cross">&#10007;</span></td><td><span class="cross">&#10007;</span></td><td><span class="cross">&#10007;</span></td><td><span class="cross">&#10007;</span></td></tr>
+            <tr><td>LLM-as-Judge Scoring</td><td><span class="check">&#10003;</span> <strong>5 dimensions</strong></td><td><span class="cross">&#10007;</span></td><td><span class="cross">&#10007;</span></td><td><span class="cross">&#10007;</span></td><td><span class="cross">&#10007;</span></td></tr>
+            <tr><td>Failure Pattern Detection</td><td><span class="check">&#10003;</span> <strong>Automatic</strong></td><td><span class="cross">&#10007;</span></td><td><span class="cross">&#10007;</span></td><td><span class="cross">&#10007;</span></td><td><span class="cross">&#10007;</span></td></tr>
+            <tr><td>Admin Approval Gate</td><td><span class="check">&#10003;</span> <strong>Full control</strong></td><td><span class="cross">&#10007;</span></td><td><span class="cross">&#10007;</span></td><td><span class="cross">&#10007;</span></td><td><span class="cross">&#10007;</span></td></tr>
+            <tr><td>Multi-LLM Fallback</td><td><span class="check">&#10003;</span> <strong>Automatic</strong></td><td><span class="cross">&#10007;</span></td><td><span class="cross">&#10007;</span></td><td>Custom</td><td><span class="cross">&#10007;</span></td></tr>
+            <tr><td>Auto-Crawl Knowledge</td><td><span class="check">&#10003;</span> <strong>Built-in</strong></td><td><span class="cross">&#10007;</span></td><td><span class="cross">&#10007;</span></td><td><span class="cross">&#10007;</span></td><td><span class="cross">&#10007;</span></td></tr>
+            <tr><td>Docker Deployment</td><td><span class="check">&#10003;</span> <strong>Your infra</strong></td><td><span class="cross">&#10007;</span> Cloud only</td><td><span class="check">&#10003;</span></td><td><span class="check">&#10003;</span></td><td><span class="cross">&#10007;</span> Cloud only</td></tr>
+            <tr><td>Unified Dashboard</td><td><span class="check">&#10003;</span> <strong>All-in-one</strong></td><td><span class="check">&#10003;</span></td><td><span class="check">&#10003;</span></td><td><span class="cross">&#10007;</span></td><td><span class="check">&#10003;</span></td></tr>
+        </tbody>
+    </table>
+    </div>
+</div>
+
+<!-- 8. Deployment & Security -->
+<div class="section">
+    <h2>Deployment & Security</h2>
+    <table>
+        <thead><tr><th>Aspect</th><th>SCUBE AI Approach</th></tr></thead>
+        <tbody>
+            <tr><td>Deployment</td><td>Docker containers — deploy on your cloud or ours</td></tr>
+            <tr><td>Data residency</td><td>Your data stays on your infrastructure</td></tr>
+            <tr><td>Data sharing</td><td>Zero — no third-party training on your conversations</td></tr>
+            <tr><td>Scaling</td><td>Horizontal — add containers as volume grows</td></tr>
+            <tr><td>Upgrades</td><td>Rolling updates, zero downtime</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- 9. ROI Summary -->
+<div class="section">
+    <h2>ROI Summary</h2>
+    <div class="roi-grid">
+        <div class="roi-card">
+            <div class="metric">&#8593; Satisfaction</div>
+            <div class="label">Consistent, high-quality responses across all channels</div>
+        </div>
+        <div class="roi-card">
+            <div class="metric">&#8595; Support Costs</div>
+            <div class="label">Auto-improvement loop reduces escalations</div>
+        </div>
+        <div class="roi-card">
+            <div class="metric">&#9201; Agent Time</div>
+            <div class="label">Chatbot handles routine queries, humans handle exceptions</div>
+        </div>
+        <div class="roi-card">
+            <div class="metric">&#128200; Daily Improvement</div>
+            <div class="label">Auto-improvement vs monthly manual updates</div>
+        </div>
+        <div class="roi-card" style="grid-column: 1 / -1;">
+            <div class="metric">&#128274; Zero Risk</div>
+            <div class="label">Admin approval gate prevents bad changes from reaching customers</div>
+        </div>
+    </div>
+</div>
+
+<!-- Footer -->
+<div class="footer">
+    <div class="logo-small">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 220" width="200" role="img">
+            <defs>
+                <linearGradient id="gBTf" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#2B6DE2"/>
+                    <stop offset="55%" stop-color="#23B7D9"/>
+                    <stop offset="100%" stop-color="#67C85A"/>
+                </linearGradient>
+                <style>
+                    .wmf { font-family: "Segoe UI","Trebuchet MS",Arial,sans-serif; font-weight: 800; letter-spacing: 1px; fill: #FFFFFF; }
+                    .slf { font-family: "Segoe UI",Arial,sans-serif; font-size: 28px; fill: #8F97A3; letter-spacing: 0.7px; }
+                </style>
+            </defs>
+            <g transform="translate(26,16)">
+                <path d="M84 12L148 44V116L84 148L20 116V44Z" fill="none" stroke="url(#gBTf)" stroke-width="5" stroke-linejoin="round"/>
+                <path d="M84 12V148" fill="none" stroke="url(#gBTf)" stroke-width="5" stroke-linecap="round"/>
+                <path d="M20 44L84 76L148 44" fill="none" stroke="url(#gBTf)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                <g fill="none" stroke="url(#gBTf)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M30 84H54L68 96H84"/><path d="M30 98H48"/><path d="M30 112H58L72 122H84"/>
+                    <path d="M84 96H100L112 86H138"/><path d="M84 118H98L114 106H138"/><path d="M84 132H104L120 122H138"/>
+                </g>
+                <g fill="url(#gBTf)">
+                    <circle cx="30" cy="84" r="4.5"/><circle cx="30" cy="98" r="4.5"/><circle cx="30" cy="112" r="4.5"/>
+                    <circle cx="138" cy="86" r="4.5"/><circle cx="138" cy="106" r="4.5"/><circle cx="138" cy="122" r="4.5"/>
+                </g>
+            </g>
+            <g transform="translate(200,44)">
+                <text x="0" y="74" class="wmf" font-size="88">SCUBE</text>
+                <text x="338" y="74" class="wmf" font-size="88" fill="#67C85A">AI</text>
+                <text x="250" y="124" class="slf" text-anchor="middle">Intelligent Solutions</text>
+            </g>
+        </svg>
+    </div>
+    <div class="contact">
+        <strong>SCUBE Infotech</strong><br>
+        Sim Lim Tower, 10 Jalan Besar, #09-10A<br>
+        Singapore 208787<br>
+        <a href="tel:+6580786788">+65 8078 6788</a> · <a href="mailto:admin@scubeinfotech.com.sg">admin@scubeinfotech.com.sg</a><br>
+        <a href="https://scubeinfotech.com.sg">scubeinfotech.com.sg</a>
+    </div>
+    <div class="tagline">SCUBE AI — Intelligent Solutions. Smarter Every Day.</div>
+</div>
+
+</body>
+</html>
