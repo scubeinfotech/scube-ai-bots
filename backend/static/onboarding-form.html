@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCUBE AI — Get Your Chatbot</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%);
+    min-height: 100vh;
+    color: #e2e8f0;
+  }
+
+  .container { max-width: 720px; margin: 0 auto; padding: 24px 16px 48px; }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .robot-icon { width: 56px; height: 56px; flex-shrink: 0; }
+  .header-title h1 { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+  .header-title p { font-size: 13px; color: #94a3b8; margin-top: 3px; }
+  .header-logo { height: 40px; width: auto; opacity: 0.9; }
+
+  /* Success state */
+  .success-card {
+    display: none;
+    text-align: center;
+    padding: 48px 24px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(74,222,128,0.3);
+    border-radius: 16px;
+    margin-bottom: 20px;
+  }
+  .success-card.show { display: block; }
+  .success-card .robot-icon { width: 80px; height: 80px; margin-bottom: 20px; }
+  .success-card h2 { font-size: 24px; color: #4ade80; margin-bottom: 10px; }
+  .success-card p { font-size: 15px; color: #94a3b8; max-width: 480px; margin: 0 auto 24px; }
+  .success-details {
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: left;
+    max-width: 520px;
+    margin: 0 auto;
+    font-size: 13px;
+    color: #cbd5e1;
+    line-height: 1.8;
+  }
+  .success-details strong { color: #4ade80; }
+
+  /* Form */
+  .form-card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 28px 24px;
+    margin-bottom: 16px;
+  }
+  .form-card h2 {
+    font-size: 17px;
+    font-weight: 600;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .form-card h2 .step-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px; height: 28px;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    border-radius: 50%;
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .field-group { margin-bottom: 18px; }
+  .field-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .field-group label .required { color: #f87171; margin-left: 2px; }
+  .field-group input,
+  .field-group select,
+  .field-group textarea {
+    width: 100%;
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px;
+    color: #f1f5f9;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .field-group input:focus,
+  .field-group select:focus,
+  .field-group textarea:focus {
+    border-color: #3b82f6;
+    background: rgba(255,255,255,0.1);
+  }
+  .field-group input::placeholder,
+  .field-group textarea::placeholder { color: #64748b; }
+  .field-group textarea { min-height: 90px; resize: vertical; font-family: inherit; }
+  .field-group select { cursor: pointer; }
+  .field-group select option { background: #1e293b; color: #f1f5f9; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+  /* Channel toggle */
+  .channel-toggle {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .channel-option {
+    flex: 1;
+    padding: 14px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+  }
+  .channel-option:hover { background: rgba(255,255,255,0.08); }
+  .channel-option.selected {
+    border-color: #3b82f6;
+    background: rgba(59,130,246,0.15);
+  }
+  .channel-option input { display: none; }
+  .channel-option .icon { font-size: 24px; margin-bottom: 6px; }
+  .channel-option .label { font-size: 13px; font-weight: 600; color: #e2e8f0; }
+  .channel-option .sub { font-size: 11px; color: #94a3b8; margin-top: 3px; }
+
+  /* WhatsApp hidden section */
+  .wa-section {
+    display: none;
+    margin-top: 16px;
+    padding: 18px;
+    background: rgba(34,197,94,0.08);
+    border: 1px solid rgba(34,197,94,0.2);
+    border-radius: 12px;
+  }
+  .wa-section.show { display: block; }
+  .wa-section h4 { font-size: 13px; color: #4ade80; margin-bottom: 12px; }
+  .wa-section p { font-size: 12px; color: #94a3b8; margin-bottom: 14px; line-height: 1.6; }
+
+  /* Submit */
+  .submit-btn {
+    width: 100%;
+    padding: 14px 24px;
+    background: linear-gradient(135deg, #2563eb, #7c3aed);
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    margin-top: 8px;
+  }
+  .submit-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 25px rgba(124,58,237,0.35); }
+  .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 24px 0;
+    font-size: 12px;
+    color: #64748b;
+  }
+  .footer a { color: #60a5fa; text-decoration: none; }
+
+  /* Error */
+  .error-msg {
+    display: none;
+    background: rgba(239,68,68,0.15);
+    border: 1px solid rgba(239,68,68,0.3);
+    color: #fca5a5;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+  .error-msg.show { display: block; }
+
+  @media (max-width: 640px) {
+    .two-col, .three-col { grid-template-columns: 1fr; }
+    .header { flex-direction: column; gap: 14px; text-align: center; }
+    .header-left { flex-direction: column; }
+    .channel-toggle { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <svg class="robot-icon" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="40" cy="7" r="5" fill="#29b6f6"/>
+        <line x1="40" y1="12" x2="40" y2="24" stroke="#29b6f6" stroke-width="3" stroke-linecap="round"/>
+        <rect x="16" y="24" width="48" height="40" rx="10" fill="none" stroke="#3b82f6" stroke-width="3"/>
+        <rect x="22" y="30" width="36" height="22" rx="4" fill="rgba(59,130,246,0.15)" stroke="#60a5fa" stroke-width="2"/>
+        <circle cx="30" cy="41" r="4" fill="#60a5fa">
+          <animate attributeName="opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="50" cy="41" r="4" fill="#60a5fa">
+          <animate attributeName="opacity" values="1;0.3;1" dur="2s" begin="1s" repeatCount="indefinite"/>
+        </circle>
+        <line x1="28" y1="68" x2="28" y2="76" stroke="#64748b" stroke-width="4" stroke-linecap="round"/>
+        <line x1="52" y1="68" x2="52" y2="76" stroke="#64748b" stroke-width="4" stroke-linecap="round"/>
+        <path d="M30 54 Q40 60 50 54" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      </svg>
+      <div class="header-title">
+        <h1>SCUBE AI Onboarding</h1>
+        <p>Get your AI-powered chatbot for website & WhatsApp</p>
+      </div>
+    </div>
+    <img class="header-logo" src="scube-ai-logo.svg" alt="SCUBE AI">
+  </div>
+
+  <!-- OTP Step -->
+  <div class="form-card" id="otpCard" style="display:none;text-align:center;">
+    <svg class="robot-icon" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" style="margin:0 auto 16px;display:block;width:72px;height:72px;">
+      <circle cx="40" cy="7" r="5" fill="#fbbf24"/>
+      <line x1="40" y1="12" x2="40" y2="24" stroke="#fbbf24" stroke-width="3" stroke-linecap="round"/>
+      <rect x="16" y="24" width="48" height="40" rx="10" fill="none" stroke="#fbbf24" stroke-width="3"/>
+      <rect x="22" y="30" width="36" height="22" rx="4" fill="rgba(251,191,36,0.15)" stroke="#fbbf24" stroke-width="2"/>
+      <circle cx="30" cy="41" r="4" fill="#fbbf24">
+        <animate attributeName="opacity" values="1;0.3;1" dur="1.5s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="50" cy="41" r="4" fill="#fbbf24">
+        <animate attributeName="opacity" values="1;0.3;1" dur="1.5s" begin="0.75s" repeatCount="indefinite"/>
+      </circle>
+      <path d="M30 54 Q40 60 50 54" stroke="#fbbf24" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    </svg>
+    <h2 style="color:#fbbf24;font-size:20px;margin-bottom:8px;">📧 Verify Your Email</h2>
+    <p style="color:#94a3b8;font-size:14px;margin-bottom:24px;">A 6-digit verification code has been sent to <strong id="otpEmailDisplay" style="color:#e2e8f0;"></strong>. Please enter it below.</p>
+    <div style="display:flex;gap:8px;justify-content:center;margin-bottom:20px;" id="otpInputs">
+      <input type="text" maxlength="1" class="otp-input" style="width:48px;height:56px;text-align:center;font-size:22px;font-weight:700;border-radius:10px;border:2px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:#fff;outline:none;transition:border-color 0.2s;" oninput="handleOtpInput(this,0)" onkeydown="handleOtpKey(this,0,event)">
+      <input type="text" maxlength="1" class="otp-input" style="width:48px;height:56px;text-align:center;font-size:22px;font-weight:700;border-radius:10px;border:2px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:#fff;outline:none;transition:border-color 0.2s;" oninput="handleOtpInput(this,1)" onkeydown="handleOtpKey(this,1,event)">
+      <input type="text" maxlength="1" class="otp-input" style="width:48px;height:56px;text-align:center;font-size:22px;font-weight:700;border-radius:10px;border:2px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:#fff;outline:none;transition:border-color 0.2s;" oninput="handleOtpInput(this,2)" onkeydown="handleOtpKey(this,2,event)">
+      <input type="text" maxlength="1" class="otp-input" style="width:48px;height:56px;text-align:center;font-size:22px;font-weight:700;border-radius:10px;border:2px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:#fff;outline:none;transition:border-color 0.2s;" oninput="handleOtpInput(this,3)" onkeydown="handleOtpKey(this,3,event)">
+      <input type="text" maxlength="1" class="otp-input" style="width:48px;height:56px;text-align:center;font-size:22px;font-weight:700;border-radius:10px;border:2px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:#fff;outline:none;transition:border-color 0.2s;" oninput="handleOtpInput(this,4)" onkeydown="handleOtpKey(this,4,event)">
+      <input type="text" maxlength="1" class="otp-input" style="width:48px;height:56px;text-align:center;font-size:22px;font-weight:700;border-radius:10px;border:2px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:#fff;outline:none;transition:border-color 0.2s;" oninput="handleOtpInput(this,5)" onkeydown="handleOtpKey(this,5,event)">
+    </div>
+    <div class="error-msg" id="otpError" style="margin-bottom:16px;text-align:center;"></div>
+    <button class="submit-btn" id="verifyOtpBtn" style="max-width:280px;margin:0 auto 12px;" onclick="verifyOtp()">✅ Verify Code</button>
+    <p style="font-size:12px;color:#64748b;">Didn't receive it? <a href="#" onclick="resendOtp()" style="color:#60a5fa;">Resend</a> or <a href="#" onclick="resetForm()" style="color:#94a3b8;">start over</a></p>
+  </div>
+
+  <!-- Success State -->
+  <div class="success-card" id="successCard">
+    <svg class="robot-icon" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="40" cy="7" r="5" fill="#4ade80"/>
+      <line x1="40" y1="12" x2="40" y2="24" stroke="#4ade80" stroke-width="3" stroke-linecap="round"/>
+      <rect x="16" y="24" width="48" height="40" rx="10" fill="none" stroke="#4ade80" stroke-width="3"/>
+      <rect x="22" y="30" width="36" height="22" rx="4" fill="rgba(74,222,128,0.15)" stroke="#4ade80" stroke-width="2"/>
+      <circle cx="30" cy="41" r="4" fill="#4ade80"/>
+      <circle cx="50" cy="41" r="4" fill="#4ade80"/>
+      <line x1="28" y1="68" x2="28" y2="76" stroke="#4ade80" stroke-width="4" stroke-linecap="round"/>
+      <line x1="52" y1="68" x2="52" y2="76" stroke="#4ade80" stroke-width="4" stroke-linecap="round"/>
+      <path d="M30 54 Q40 60 50 54" stroke="#4ade80" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    </svg>
+    <h2>🎉 Request Submitted!</h2>
+    <p>Thank you. Our team will review your details and set up your AI chatbot within 24 hours. You'll receive an email with next steps.</p>
+    <div class="success-details" id="successDetails"></div>
+    <button class="submit-btn" style="margin-top:20px;max-width:280px;" onclick="resetForm()">Submit Another Request</button>
+  </div>
+
+  <!-- Form -->
+  <form id="onboardingForm">
+
+    <div class="error-msg" id="errorMsg"></div>
+
+    <!-- Step 1: Business Info -->
+    <div class="form-card">
+      <h2><span class="step-num">1</span> Business Information</h2>
+      <div class="two-col">
+        <div class="field-group">
+          <label>Business Name <span class="required">*</span></label>
+          <input type="text" id="businessName" placeholder="e.g. Nutech Solutions Pte Ltd" required>
+        </div>
+        <div class="field-group">
+          <label>Your Name</label>
+          <input type="text" id="contactName" placeholder="e.g. John Tan">
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="field-group">
+          <label>Email <span class="required">*</span></label>
+          <input type="email" id="contactEmail" placeholder="admin@nutech.com.sg" required>
+        </div>
+        <div class="field-group">
+          <label>Phone</label>
+          <input type="tel" id="contactPhone" placeholder="+65 9123 4567">
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="field-group">
+          <label>Website URL</label>
+          <input type="url" id="websiteUrl" placeholder="https://nutech.com.sg">
+        </div>
+        <div class="field-group">
+          <label>Industry</label>
+          <select id="industry">
+            <option value="services">Services / IT</option>
+            <option value="food">Food & Beverage</option>
+            <option value="retail">Retail / E-commerce</option>
+            <option value="accounting">Accounting / Finance</option>
+            <option value="insurance">Insurance</option>
+            <option value="non-profit">Non-Profit</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-group">
+        <label>Business Hours</label>
+        <input type="text" id="businessHours" placeholder="e.g. Mon-Fri 9AM-6PM, Sat 9AM-1PM">
+      </div>
+    </div>
+
+    <!-- Step 2: Channels -->
+    <div class="form-card">
+      <h2><span class="step-num">2</span> Channels You Need</h2>
+      <div class="channel-toggle">
+        <label class="channel-option selected" id="optChat" onclick="toggleChannel('chat')">
+          <input type="checkbox" id="wantChat" checked>
+          <div class="icon">💬</div>
+          <div class="label">Web Chat Widget</div>
+          <div class="sub">Embed on your website</div>
+        </label>
+        <label class="channel-option" id="optWA" onclick="toggleChannel('wa')">
+          <input type="checkbox" id="wantWA">
+          <div class="icon">📲</div>
+          <div class="label">WhatsApp</div>
+          <div class="sub">AI replies on WhatsApp</div>
+        </label>
+      </div>
+
+      <!-- WhatsApp Credentials (hidden by default) -->
+      <div class="wa-section" id="waSection">
+        <h4>WhatsApp Business Credentials (optional)</h4>
+        <p>If you already have a WhatsApp Business number and Meta App, enter details below. Otherwise, our team will guide you through setup.</p>
+        <div class="two-col">
+          <div class="field-group">
+            <label>Phone Number ID</label>
+            <input type="text" id="waPhoneId" placeholder="e.g. 130762373455172">
+          </div>
+          <div class="field-group">
+            <label>Business Account ID</label>
+            <input type="text" id="waBizId" placeholder="e.g. 123024504233865">
+          </div>
+        </div>
+        <div class="field-group">
+          <label>Access Token</label>
+          <input type="password" id="waToken" placeholder="EAAxxxxxxxx...">
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3: Knowledge -->
+    <div class="form-card">
+      <h2><span class="step-num">3</span> What Should Your AI Know?</h2>
+      <div class="field-group">
+        <label>Services / Products You Offer</label>
+        <textarea id="servicesList" placeholder="One per line:
+Managed IT Services
+Cloud Solutions
+Web Development
+Networking
+Data Backup"></textarea>
+      </div>
+      <div class="field-group">
+        <label>Welcome Message</label>
+        <input type="text" id="welcomeMessage" placeholder="Hi! I'm your AI assistant. How can I help you today?">
+      </div>
+      <div class="field-group">
+        <label>FAQs or Extra Information</label>
+        <textarea id="faqs" placeholder="Any questions your customers ask frequently, pricing info, policies, etc."></textarea>
+      </div>
+    </div>
+
+    <button type="submit" class="submit-btn" id="submitBtn">🚀 Submit Onboarding Request</button>
+  </form>
+
+  <div class="footer">
+    Powered by <a href="https://scubeinfotech.com.sg" target="_blank">SCUBE Infotech</a> — Intelligent AI Solutions
+  </div>
+
+</div>
+
+<script>
+const API_BASE = window.location.origin + '/api/admin';
+let currentRequestId = null;
+let currentPayload = null;
+
+function toggleChannel(type) {
+  if (type === 'chat') {
+    const cb = document.getElementById('wantChat');
+    cb.checked = !cb.checked;
+    document.getElementById('optChat').classList.toggle('selected', cb.checked);
+  } else {
+    const cb = document.getElementById('wantWA');
+    cb.checked = !cb.checked;
+    document.getElementById('optWA').classList.toggle('selected', cb.checked);
+    document.getElementById('waSection').classList.toggle('show', cb.checked);
+  }
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg;
+  el.classList.add('show');
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function hideError() {
+  document.getElementById('errorMsg').classList.remove('show');
+  document.getElementById('otpError').classList.remove('show');
+}
+
+function resetForm() {
+  document.getElementById('onboardingForm').reset();
+  document.getElementById('successCard').classList.remove('show');
+  document.getElementById('otpCard').style.display = 'none';
+  document.getElementById('onboardingForm').style.display = 'block';
+  document.getElementById('waSection').classList.remove('show');
+  document.getElementById('optChat').classList.add('selected');
+  document.getElementById('optWA').classList.remove('selected');
+  document.getElementById('wantChat').checked = true;
+  document.getElementById('wantWA').checked = false;
+  document.querySelectorAll('.otp-input').forEach(i => i.value = '');
+  currentRequestId = null;
+  currentPayload = null;
+  hideError();
+}
+
+function handleOtpInput(el, idx) {
+  el.value = el.value.replace(/\D/g, '').slice(0,1);
+  if (el.value && idx < 5) {
+    document.querySelectorAll('.otp-input')[idx+1].focus();
+  }
+}
+function handleOtpKey(el, idx, e) {
+  if (e.key === 'Backspace' && !el.value && idx > 0) {
+    document.querySelectorAll('.otp-input')[idx-1].focus();
+  }
+  if (e.key === 'Enter') verifyOtp();
+}
+
+async function verifyOtp() {
+  const digits = Array.from(document.querySelectorAll('.otp-input')).map(i => i.value).join('');
+  if (digits.length !== 6) {
+    const el = document.getElementById('otpError');
+    el.textContent = 'Please enter the full 6-digit code.';
+    el.classList.add('show');
+    return;
+  }
+  const btn = document.getElementById('verifyOtpBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Verifying...';
+  try {
+    const res = await fetch(API_BASE + '/onboarding-requests/verify-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ request_id: currentRequestId, otp: digits }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Verification failed');
+
+    // Show success
+    document.getElementById('otpCard').style.display = 'none';
+    document.getElementById('successCard').classList.add('show');
+    document.getElementById('successCard').scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    const details = [
+      `<strong>Request ID:</strong> ${currentRequestId}`,
+      `<strong>Business:</strong> ${currentPayload.business_name}`,
+      `<strong>Email:</strong> ${currentPayload.contact_email}`,
+    ];
+    if (currentPayload.want_chat_widget) details.push('<strong>Web Chat:</strong> ✅ Requested');
+    if (currentPayload.want_whatsapp) details.push('<strong>WhatsApp:</strong> ✅ Requested');
+    document.getElementById('successDetails').innerHTML = details.join('<br>');
+
+  } catch (err) {
+    const el = document.getElementById('otpError');
+    el.textContent = err.message;
+    el.classList.add('show');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✅ Verify Code';
+  }
+}
+
+async function resendOtp() {
+  if (!currentPayload) return;
+  // Re-submit to get new OTP
+  const btn = document.getElementById('verifyOtpBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Resending...';
+  try {
+    const res = await fetch(API_BASE + '/onboarding-requests', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(currentPayload),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Failed to resend');
+    currentRequestId = data.request_id;
+    document.querySelectorAll('.otp-input').forEach(i => i.value = '');
+    document.querySelectorAll('.otp-input')[0].focus();
+    const el = document.getElementById('otpError');
+    el.textContent = 'A new code has been sent.';
+    el.style.color = '#4ade80';
+    el.classList.add('show');
+    setTimeout(() => { el.classList.remove('show'); el.style.color = ''; }, 3000);
+  } catch (err) {
+    const el = document.getElementById('otpError');
+    el.textContent = err.message;
+    el.classList.add('show');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✅ Verify Code';
+  }
+}
+
+document.getElementById('onboardingForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  hideError();
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Submitting...';
+
+  const payload = {
+    business_name: document.getElementById('businessName').value.trim(),
+    contact_name: document.getElementById('contactName').value.trim(),
+    contact_email: document.getElementById('contactEmail').value.trim(),
+    contact_phone: document.getElementById('contactPhone').value.trim(),
+    website_url: document.getElementById('websiteUrl').value.trim(),
+    industry: document.getElementById('industry').value,
+    business_hours: document.getElementById('businessHours').value.trim(),
+    want_chat_widget: document.getElementById('wantChat').checked,
+    want_whatsapp: document.getElementById('wantWA').checked,
+    services_list: document.getElementById('servicesList').value.trim(),
+    welcome_message: document.getElementById('welcomeMessage').value.trim(),
+    faqs: document.getElementById('faqs').value.trim(),
+    wa_phone_number_id: document.getElementById('waPhoneId').value.trim() || '',
+    wa_business_account_id: document.getElementById('waBizId').value.trim() || '',
+    wa_access_token: document.getElementById('waToken').value.trim() || '',
+  };
+
+  try {
+    const res = await fetch(API_BASE + '/onboarding-requests', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.detail || 'Submission failed. Please try again.');
+    }
+
+    if (data.status === 'awaiting_otp') {
+      // Show OTP step
+      currentRequestId = data.request_id;
+      currentPayload = payload;
+      document.getElementById('onboardingForm').style.display = 'none';
+      document.getElementById('otpCard').style.display = 'block';
+      document.getElementById('otpEmailDisplay').textContent = payload.contact_email;
+      document.getElementById('otpCard').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => document.querySelectorAll('.otp-input')[0].focus(), 300);
+      return;
+    }
+
+    // Direct success (shouldn't happen with OTP flow)
+    document.getElementById('successCard').classList.add('show');
+    document.getElementById('successCard').scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+  } catch (err) {
+    showError(err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🚀 Submit Onboarding Request';
+  }
+});
+</script>
+
+</body>
+</html>

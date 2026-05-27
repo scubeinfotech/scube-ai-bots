@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pricing — SCUBE AI</title>
+    <script>if(localStorage.getItem('theme')==='light')document.documentElement.setAttribute('data-theme','light')</script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/theme.css">
+    <style>
+        [x-cloak] { display: none !important; }
+        body { font-family: 'Inter', sans-serif; }
+        .gradient-bg { background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%); }
+        .glass { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); }
+        .card-popular { border: 2px solid rgba(99,102,241,0.5); background: rgba(99,102,241,0.08); }
+        .btn-primary { background: linear-gradient(135deg, #6366f1, #8b5cf6); transition: all 0.2s; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(99,102,241,0.4); }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen text-white">
+
+<div class="min-h-screen" x-data="pricingPage()" x-init="loadPlans()">
+
+    <!-- Header -->
+    <header class="border-b border-white/10">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+            <a href="javascript:void(0);" class="flex items-center gap-3">
+                <img src="/static/logo.svg" alt="AI CHATBOT Logo" class="h-10 w-auto"/>
+                <span class="text-xl font-bold ml-2">SUBCE AI - CHATBOT</span>
+            </a>
+            <div class="flex items-center gap-4 text-sm">
+                <button @click="toggleTheme()" class="p-1.5 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition" title="Toggle theme">
+                    <svg x-show="theme === 'dark'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                    <svg x-show="theme === 'light'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                </button>
+                <a href="/public/register" class="btn-primary px-5 py-2 rounded-lg font-medium text-white">Start Free Trial</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero -->
+    <section class="text-center py-16 px-4">
+        <h1 class="text-4xl md:text-5xl font-bold mb-4">Simple, Transparent Pricing</h1>
+        <p class="text-gray-400 text-lg max-w-2xl mx-auto">Start with a 7-day free trial. No credit card required. Upgrade when you're ready.</p>
+    </section>
+
+    <!-- Plans -->
+    <section class="max-w-6xl mx-auto px-4 pb-20">
+        <div class="grid md:grid-cols-3 gap-6">
+            <template x-for="plan in plans" :key="plan.name">
+                <div class="glass rounded-2xl p-8 flex flex-col"
+                     :class="{ 'card-popular': plan.name === 'growth' }">
+
+                    <!-- Popular Badge -->
+                    <div x-show="plan.name === 'growth'" class="text-center -mt-2 mb-4">
+                        <span class="inline-block px-3 py-1 bg-indigo-500 text-white text-xs font-semibold rounded-full">Most Popular</span>
+                    </div>
+
+                    <h3 class="text-xl font-bold mb-1" x-text="plan.display_name"></h3>
+                    <p class="text-gray-400 text-sm mb-6" x-text="plan.description"></p>
+
+                    <!-- Price -->
+                    <div class="mb-6">
+                        <span class="text-4xl font-bold" x-text="plan.price_monthly === 0 ? 'Free' : '$' + plan.price_monthly"></span>
+                        <span x-show="plan.price_monthly > 0" class="text-gray-400">/month</span>
+                        <span x-show="plan.price_monthly === 0" class="text-gray-400"> for 7 days</span>
+                    </div>
+
+                    <!-- Features -->
+                    <ul class="space-y-3 mb-8 flex-1">
+                        <li class="flex items-center gap-2 text-sm">
+                            <svg class="w-5 h-5 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <span>AI Chatbot Widget</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <svg class="w-5 h-5" :class="plan.includes_whatsapp ? 'text-green-400' : 'text-gray-600'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <span :class="plan.includes_whatsapp ? '' : 'text-gray-500'">WhatsApp Integration</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <svg class="w-5 h-5 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <span x-text="plan.monthly_message_limit.toLocaleString() + ' messages/month'"></span>
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <svg class="w-5 h-5 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <span x-text="plan.max_documents + ' knowledge documents'"></span>
+                        </li>
+                        <li x-show="plan.priority_support" class="flex items-center gap-2 text-sm">
+                            <svg class="w-5 h-5 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <span>Priority Support</span>
+                        </li>
+                    </ul>
+
+                    <!-- CTA -->
+                    <a href="/public/register"
+                       class="block text-center py-3 rounded-xl font-semibold transition"
+                       :class="plan.name === 'growth' ? 'btn-primary text-white' : 'bg-white/10 hover:bg-white/20 text-white'">
+                        <span x-text="plan.price_monthly === 0 ? 'Start Free Trial' : 'Get Started'"></span>
+                    </a>
+                </div>
+            </template>
+        </div>
+
+        <!-- PayNow Info -->
+        <div class="mt-12 glass rounded-2xl p-8 text-center">
+            <h3 class="text-xl font-bold mb-2">Prefer PayNow?</h3>
+            <p class="text-gray-400 mb-4">We accept PayNow for Singapore businesses. Contact us to set up PayNow billing.</p>
+            <a href="mailto:sales@scubeinfotech.com.sg" class="text-indigo-400 hover:text-indigo-300 font-medium">Contact Sales →</a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="border-t border-white/10 py-6 text-center text-sm text-gray-500">
+        &copy; 2026 SCUBE AI. Intelligent chatbots for every business.
+    </footer>
+</div>
+
+<script>
+function pricingPage() {
+    return {
+        theme: localStorage.getItem('theme') || 'dark',
+        plans: [],
+
+        toggleTheme() {
+            this.theme = this.theme === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('theme', this.theme);
+            if (this.theme === 'light') {
+                document.documentElement.setAttribute('data-theme', 'light');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
+        },
+
+        async loadPlans() {
+            try {
+                const resp = await fetch('/api/public/plans');
+                const data = await resp.json();
+                this.plans = data.plans.filter(p => p.name !== 'trial');
+            } catch (e) {
+                this.plans = [
+                    { name: 'starter', display_name: 'Starter', description: 'Perfect for small businesses', price_monthly: 29, includes_whatsapp: false, monthly_message_limit: 2000, max_documents: 50, priority_support: false },
+                    { name: 'growth', display_name: 'Growth', description: 'Growing businesses', price_monthly: 59, includes_whatsapp: true, monthly_message_limit: 10000, max_documents: 200, priority_support: true },
+                    { name: 'enterprise', display_name: 'Enterprise', description: 'Custom solutions', price_monthly: 149, includes_whatsapp: true, monthly_message_limit: 100000, max_documents: 1000, priority_support: true },
+                ];
+            }
+        }
+    };
+}
+</script>
+
+</body>
+</html>

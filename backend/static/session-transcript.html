@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat Session Transcript</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { visibility: hidden; }
+    body.loaded { visibility: visible; }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen" onload="document.body.classList.add('loaded')">
+  <div class="bg-white shadow">
+    <div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Chat Transcript</h1>
+        <p id="sessionLabel" class="text-sm text-gray-500"></p>
+      </div>
+      <div class="flex gap-2">
+        <a id="backBtn" href="/public/conversations" class="px-3 py-2 rounded bg-gray-600 text-white hover:bg-gray-700">Back to Conversations</a>
+        <button id="logoutBtn" class="px-3 py-2 rounded border border-red-500 text-red-600 hover:bg-red-50">Logout</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-4xl mx-auto p-4">
+    <div id="errorBox" class="hidden mb-4 p-3 rounded border border-red-300 bg-red-50 text-red-700 text-sm"></div>
+
+    <div class="bg-white rounded-lg shadow p-4">
+      <div id="messagesList" class="space-y-4">
+        <p class="text-gray-500 text-center py-8">Loading messages...</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = window.location.origin;
+    const sessionId = window.location.pathname.split('/').pop();
+
+    function logoutTenant() {
+      localStorage.removeItem('tenantToken');
+      localStorage.removeItem('tenantName');
+      localStorage.removeItem('tenantUsername');
+      window.location.href = '/public/login';
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return 'Unknown';
+      const date = new Date(dateStr);
+      return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    async function loadTranscript() {
+      const token = localStorage.getItem('tenantToken');
+      const tenantName = localStorage.getItem('tenantName') || 'Tenant';
+      const username = localStorage.getItem('tenantUsername') || '';
+      
+      document.getElementById('sessionLabel').textContent = `Session: ${sessionId.slice(0, 8)}... | ${tenantName} (${username})`;
+
+      if (!token) {
+        logoutTenant();
+        return;
+      }
+
+      const errorBox = document.getElementById('errorBox');
+      errorBox.classList.add('hidden');
+
+      try {
+        const resp = await fetch(`${API_BASE}/api/tenants/conversations/session/${sessionId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (!resp.ok) {
+          const data = await resp.json();
+          throw new Error(data.detail || `HTTP ${resp.status}`);
+        }
+        
+        const data = await resp.json();
+        const messages = data.messages || [];
+        
+        const listEl = document.getElementById('messagesList');
+        
+        if (messages.length === 0) {
+          listEl.innerHTML = '<p class="text-gray-500 text-center py-8">No messages in this session</p>';
+          return;
+        }
+        
+        listEl.innerHTML = messages.map(msg => {
+          const isUser = msg.role === 'user';
+          const bgClass = isUser ? 'bg-blue-50' : 'bg-gray-50';
+          const alignClass = isUser ? 'justify-end' : 'justify-start';
+          const roleLabel = isUser ? 'You' : 'AI Assistant';
+          
+          return `
+            <div class="flex ${alignClass}">
+              <div class="max-w-3xl ${bgClass} rounded-lg p-4">
+                <div class="text-xs font-semibold text-gray-500 mb-1">${roleLabel}</div>
+                <div class="text-sm text-gray-900 whitespace-pre-wrap">${msg.content}</div>
+                <div class="text-xs text-gray-400 mt-2">
+                  ${formatDate(msg.created_at)}
+                  ${msg.model_used ? ` | Model: ${msg.model_used}` : ''}
+                  ${msg.feedback_score !== null ? ` | Feedback: ${msg.feedback_score === 1 ? '👍' : '👎'}` : ''}
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+        
+      } catch (err) {
+        if (String(err.message).toLowerCase().includes('401')) {
+          logoutTenant();
+          return;
+        }
+        errorBox.textContent = err.message;
+        errorBox.classList.remove('hidden');
+      }
+    }
+
+    document.getElementById('logoutBtn').addEventListener('click', logoutTenant);
+    document.getElementById('backBtn').addEventListener('click', (e) => {
+      // Get tenant ID for back link
+      const urlParams = new URLSearchParams(window.location.search);
+      const tenantId = urlParams.get('tenant') || localStorage.getItem('tenantId');
+      if (tenantId) {
+        e.target.href = `/tenant/conversations?tenant=${tenantId}`;
+      }
+    });
+
+    loadTranscript();
+  </script>
+</body>
+</html>

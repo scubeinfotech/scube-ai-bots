@@ -1,0 +1,2248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard — SCUBE AI</title>
+    <script>if(localStorage.getItem('theme')==='light')document.documentElement.setAttribute('data-theme','light')</script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/theme.css">
+    <style>
+        [x-cloak] { display: none !important; }
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar-item { transition: all 0.15s; }
+        .sidebar-item:hover { background: rgba(255,255,255,0.08); }
+        .sidebar-item.active { background: rgba(99,102,241,0.2); color: #a5b4fc; border-right: 3px solid #6366f1; }
+        .card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; }
+        .metric-card { background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1)); border: 1px solid rgba(99,102,241,0.2); }
+        .btn-primary { background: linear-gradient(135deg, #6366f1, #8b5cf6); transition: all 0.2s; }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(99,102,241,0.3); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .input-field { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; }
+        .input-field:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.2); }
+        select option { background: #1e293b; color: #fff; }
+        .spinner { border: 3px solid rgba(255,255,255,0.3); border-top: 3px solid white; border-radius: 50%; width: 20px; height: 20px; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .toast { animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    </style>
+</head>
+<body class="bg-gray-950 text-white min-h-screen" x-data="adminDashboard()" x-init="init()">
+
+    <!-- Toast -->
+    <div x-show="toast.show" x-transition class="fixed top-4 right-4 z-50 toast">
+        <div class="px-4 py-3 rounded-lg shadow-lg text-sm font-medium"
+             :class="toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'"
+             x-text="toast.message"></div>
+    </div>
+
+    <!-- Login Form -->
+    <div x-show="!authenticated" x-cloak class="min-h-screen flex flex-col items-center justify-center px-4">
+        <div class="w-full max-w-md">
+            <!-- Logo & Branding -->
+            <div class="text-center mb-8">
+                <a href="https://scubeinfotech.com.sg" target="_blank" class="inline-block">
+                    <img src="/static/logo.svg" alt="SCUBE AI Logo" class="h-16 w-auto mx-auto mb-4"/>
+                </a>
+                <h1 class="text-2xl font-bold text-white">Admin Dashboard</h1>
+                <p class="text-gray-400 text-sm mt-1">Sign in to manage your platform</p>
+            </div>
+
+            <div class="card p-8">
+                <div class="space-y-4">
+                    <input type="text" x-model="loginForm.username" placeholder="Username" class="input-field w-full px-4 py-3 text-white">
+                    <input type="password" x-model="loginForm.password" @keyup.enter="login()" placeholder="Password" class="input-field w-full px-4 py-3 text-white">
+                    <div x-show="loginError" class="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm" x-text="loginError"></div>
+                    <button @click="login()" :disabled="loginLoading" class="w-full btn-primary py-3 rounded-lg font-semibold text-white flex items-center justify-center gap-2">
+                        <div x-show="loginLoading" class="spinner"></div>
+                        <span x-text="loginLoading ? 'Signing in...' : 'Sign In'"></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="text-center mt-8 text-xs text-gray-500">
+                <p class="flex items-center justify-center gap-2">
+                    <img src="/static/scube-logo-small.png" alt="SCUBE" class="h-5 w-auto inline-block"/>
+                    <span>Powered by</span>
+                    <a href="https://scubeinfotech.com.sg" target="_blank" class="text-indigo-400 hover:text-indigo-300 transition font-medium">SCUBE AI Intelligent Solutions</a>
+                </p>
+                <p class="mt-1">&copy; 2026 <a href="https://scubeinfotech.com.sg" target="_blank" class="hover:text-gray-300 transition">SCUBE Infotech</a>. All rights reserved.</p>
+            </div>
+        </div>
+    </div>
+
+                    <!-- Pattern Messages Modal -->
+                    <div x-show="showPatternModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100]" x-cloak>
+                        <div @click.self="showPatternModal = false" class="p-4 w-full max-w-3xl max-h-[80vh] flex">
+                            <div class="card p-6 w-full overflow-y-auto">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="font-semibold" x-text="'Pattern: ' + (patternDetail?.pattern_name || '')"></h3>
+                                    <button @click="showPatternModal = false" class="text-gray-400 hover:text-white text-xl leading-none">&times;</button>
+                                </div>
+                                <div x-show="patternLoading" class="text-center py-8 text-gray-400">
+                                    <div class="spinner mx-auto mb-2"></div>
+                                    Loading messages...
+                                </div>
+                                <div x-show="!patternLoading && (!patternDetail?.messages || patternDetail.messages.length === 0)" class="text-center py-8 text-gray-500">
+                                    No messages found.
+                                </div>
+                                <div x-show="!patternLoading && patternDetail?.messages?.length > 0" class="space-y-3">
+                                    <template x-for="(m, i) in (patternDetail?.messages || [])" :key="m.message_id">
+                                        <div class="bg-white/5 rounded-lg p-4 border border-white/10">
+                                            <div class="flex items-center justify-between mb-2">
+                                                <div class="flex items-center gap-2">
+                                                    <span class="text-xs text-gray-500">#<span x-text="i + 1"></span></span>
+                                                    <span x-show="m.source" class="text-[10px] font-medium uppercase px-1.5 py-0.5 rounded"
+                                                          :class="m.source === 'whatsapp' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'"
+                                                          x-text="m.source"></span>
+                                                </div>
+                                                <span class="text-xs font-semibold px-2 py-0.5 rounded"
+                                                      :class="(m.overall_score || 0) < 0.5 ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'"
+                                                      x-text="(m.overall_score ? (m.overall_score * 100).toFixed(0) : '?') + '%'"></span>
+                                            </div>
+                                            <div class="mb-2">
+                                                <p class="text-xs text-gray-500 mb-0.5">User:</p>
+                                                <p class="text-sm text-gray-200" x-text="m.user_query || '(empty)'"></p>
+                                            </div>
+                                            <div>
+                                                <p class="text-xs text-gray-500 mb-0.5">Bot:</p>
+                                                <p class="text-sm text-gray-300" x-text="m.bot_response?.substring(0, 500)"></p>
+                                            </div>
+                                            <div x-show="m.dimensions" class="mt-2 flex flex-wrap gap-2 text-xs text-gray-500">
+                                                <span>R: <span x-text="m.dimensions?.relevance?.toFixed(2)"></span></span>
+                                                <span>A: <span x-text="m.dimensions?.accuracy?.toFixed(2)"></span></span>
+                                                <span>Cm: <span x-text="m.dimensions?.completeness?.toFixed(2)"></span></span>
+                                                <span>Cs: <span x-text="m.dimensions?.conciseness?.toFixed(2)"></span></span>
+                                                <span>T: <span x-text="m.dimensions?.tone?.toFixed(2)"></span></span>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div x-show="authenticated" x-cloak class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-gray-900 border-r border-white/5 flex flex-col">
+            <div class="p-3 border-b border-white/5 bg-white">
+                <div class="flex items-center justify-center mb-2">
+                    <img src="/static/logo.svg" alt="Admin" class="h-14 w-auto">
+                </div>
+                <div class="flex items-center justify-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                    <span class="text-[10px] font-semibold text-amber-600 uppercase tracking-widest">Admin Panel</span>
+                </div>
+            </div>
+            <nav class="flex-1 py-4">
+                <a @click.prevent="activeTab = 'overview'" :class="{ 'active': activeTab === 'overview' }" class="sidebar-item flex items-center gap-3 px-5 py-3 text-sm cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 10l2-2m12-6l2 2m0-10l-2-2"/></svg>
+                    Overview
+                </a>
+                <a @click.prevent="activeTab = 'tenants'" :class="{ 'active': activeTab === 'tenants' }" class="sidebar-item flex items-center gap-3 px-5 py-3 text-sm cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                    Tenants
+                </a>
+                <a @click.prevent="activeTab = 'billing'" :class="{ 'active': activeTab === 'billing' }" class="sidebar-item flex items-center gap-3 px-5 py-3 text-sm cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                    Billing
+                </a>
+                <a @click.prevent="activeTab = 'quality'; loadQualityData()" :class="{ 'active': activeTab === 'quality' }" class="sidebar-item flex items-center gap-3 px-5 py-3 text-sm cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Quality
+                </a>
+                <a @click.prevent="activeTab = 'settings'" :class="{ 'active': activeTab === 'settings' }" class="sidebar-item flex items-center gap-3 px-5 py-3 text-sm cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    Settings
+                </a>
+            </nav>
+            <div class="p-4 border-t border-white/5">
+                <button @click="logout()" class="w-full flex items-center gap-2 text-sm text-gray-400 hover:text-white transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                    Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-y-auto">
+            <header class="border-b border-white/5 px-8 py-4 flex items-center justify-between">
+                <h1 class="text-xl font-semibold" x-text="tabTitle"></h1>
+                <div class="flex items-center gap-4">
+                    <button @click="toggleTheme()" class="p-1.5 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition" title="Toggle theme">
+                        <svg x-show="theme === 'dark'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                        <svg x-show="theme === 'light'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                    </button>
+                    <span class="text-sm text-gray-400" x-text="adminUsername"></span>
+                    <div class="relative">
+                        <div @click="profileOpen = !profileOpen" class="w-8 h-8 bg-indigo-500/20 rounded-full flex items-center justify-center text-sm font-semibold text-indigo-400 cursor-pointer select-none" :class="{ 'ring-2 ring-indigo-400': profileOpen }">A</div>
+                        <div x-show="profileOpen" @click.outside="profileOpen = false" x-cloak class="absolute right-0 mt-2 w-56 rounded-lg shadow-xl z-50 overflow-hidden" :class="theme === 'dark' ? 'bg-gray-900 border border-white/10' : 'bg-white border border-gray-200'">
+                            <div class="px-4 py-3 border-b" :class="theme === 'dark' ? 'border-white/10' : 'border-gray-200'">
+                                <p class="text-sm font-medium" :class="theme === 'dark' ? 'text-white' : 'text-gray-900'" x-text="adminUsername"></p>
+                                <p class="text-xs" :class="theme === 'dark' ? 'text-gray-400' : 'text-gray-500'">Administrator</p>
+                            </div>
+                            <div class="py-1">
+                                <button @click="profileOpen = false; showChangePassword = true" class="w-full text-left px-4 py-2 text-sm flex items-center gap-2" :class="theme === 'dark' ? 'text-gray-300 hover:bg-white/5 hover:text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                                    Change Password
+                                </button>
+                                <button @click="logout()" class="w-full text-left px-4 py-2 text-sm flex items-center gap-2" :class="theme === 'dark' ? 'text-gray-300 hover:bg-white/5 hover:text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                                    Sign Out
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="p-8">
+                <!-- ========== OVERVIEW TAB ========== -->
+                <div x-show="activeTab === 'overview'" x-transition>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                        <div class="metric-card p-5">
+                            <div class="text-xs text-gray-400 uppercase tracking-wide mb-1">Total Tenants</div>
+                            <div class="text-3xl font-bold" x-text="stats.totalTenants"></div>
+                        </div>
+                        <div class="metric-card p-5">
+                            <div class="text-xs text-gray-400 uppercase tracking-wide mb-1">Active Trials</div>
+                            <div class="text-3xl font-bold text-green-400" x-text="stats.activeTrials"></div>
+                        </div>
+                        <div class="metric-card p-5">
+                            <div class="text-xs text-gray-400 uppercase tracking-wide mb-1">Paid Subscriptions</div>
+                            <div class="text-3xl font-bold text-indigo-400" x-text="stats.paidSubscriptions"></div>
+                        </div>
+                        <div class="metric-card p-5">
+                            <div class="text-xs text-gray-400 uppercase tracking-wide mb-1">Pending Payments</div>
+                            <div class="text-3xl font-bold text-yellow-400" x-text="stats.pendingPayments"></div>
+                        </div>
+                        <div class="metric-card p-5">
+                            <div class="text-xs text-gray-400 uppercase tracking-wide mb-1">New (7 days)</div>
+                            <div class="text-3xl font-bold text-blue-400" x-text="stats.newRegistrations7d"></div>
+                        </div>
+                    </div>
+
+                    <!-- Crawl Status Summary -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                        <div class="card p-5 border-l-4 border-green-500">
+                            <div class="text-xs text-gray-400 uppercase tracking-wide mb-1">Crawl OK</div>
+                            <div class="text-3xl font-bold text-green-400" x-text="stats.crawlCompleted"></div>
+                        </div>
+                        <div class="card p-5 border-l-4 border-red-500">
+                            <div class="text-xs text-gray-400 uppercase tracking-wide mb-1">Crawl Failed</div>
+                            <div class="text-3xl font-bold text-red-400" x-text="stats.crawlFailed"></div>
+                        </div>
+                        <div class="card p-5 border-l-4 border-yellow-500">
+                            <div class="text-xs text-gray-400 uppercase tracking-wide mb-1">Never Crawled</div>
+                            <div class="text-3xl font-bold text-yellow-400" x-text="stats.crawlNeverRun"></div>
+                        </div>
+                        <div class="card p-5 border-l-4 border-blue-500">
+                            <div class="text-xs text-gray-400 uppercase tracking-wide mb-1">In Progress</div>
+                            <div class="text-3xl font-bold text-blue-400" x-text="stats.crawlInProgress"></div>
+                        </div>
+                    </div>
+
+                    <!-- CRM Overview -->
+                    <div class="card p-6 mb-8">
+                        <h3 class="font-semibold mb-4">📊 WhatsApp CRM Overview</h3>
+                        <div x-show="loadingCRMStats" class="text-center py-4 text-gray-400 text-sm">
+                            <div class="spinner mx-auto mb-2"></div>
+                            Loading CRM stats...
+                        </div>
+                        <div x-show="!loadingCRMStats" class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                            <div class="bg-white/5 rounded-lg p-3 text-center">
+                                <div class="text-2xl font-bold text-indigo-400" x-text="crmStats.total_contacts ?? '—'"></div>
+                                <div class="text-xs text-gray-400 mt-1">Total Contacts</div>
+                            </div>
+                            <div class="bg-white/5 rounded-lg p-3 text-center">
+                                <div class="text-2xl font-bold text-green-400" x-text="crmStats.confirmed_leads ?? '—'"></div>
+                                <div class="text-xs text-gray-400 mt-1">Confirmed Leads</div>
+                            </div>
+                            <div class="bg-white/5 rounded-lg p-3 text-center">
+                                <div class="text-2xl font-bold text-amber-400" x-text="crmStats.tentative_leads ?? '—'"></div>
+                                <div class="text-xs text-gray-400 mt-1">Tentative</div>
+                            </div>
+                            <div class="bg-white/5 rounded-lg p-3 text-center">
+                                <div class="text-2xl font-bold text-blue-400" x-text="crmStats.leads_today ?? '—'"></div>
+                                <div class="text-xs text-gray-400 mt-1">Leads Today</div>
+                            </div>
+                            <div class="bg-white/5 rounded-lg p-3 text-center">
+                                <div class="text-2xl font-bold text-purple-400" x-text="crmStats.pending_followups ?? '—'"></div>
+                                <div class="text-xs text-gray-400 mt-1">Follow-ups Pending</div>
+                            </div>
+                        </div>
+                        <div x-show="!loadingCRMStats && crmStats?.top_tenants?.length" class="mt-4">
+                            <div class="text-xs text-gray-400 mb-2">Top Tenants by Confirmed Leads</div>
+                            <div class="flex flex-wrap gap-2">
+                                <template x-for="t in crmStats.top_tenants.slice(0,5)" :key="t.tenant_id">
+                                    <span class="text-xs bg-indigo-500/10 text-indigo-300 px-2 py-1 rounded">
+                                        <span x-text="t.tenant_id.slice(0,8) + '...'"></span>: <strong x-text="t.confirmed_leads"></strong>
+                                    </span>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Crawl Errors Alert -->
+                    <div x-show="crawlErrors.length > 0" class="card p-6 mb-8 border-l-4 border-red-500 bg-red-500/5">
+                        <h3 class="font-semibold text-red-400 mb-3">⚠ Crawl Errors (Last 3AM Job)</h3>
+                        <div class="space-y-2">
+                            <template x-for="err in crawlErrors" :key="err.tenant_id">
+                                <div class="flex items-center justify-between p-3 bg-black/20 rounded">
+                                    <div>
+                                        <span class="font-medium" x-text="err.tenant_name"></span>
+                                        <span class="text-xs text-gray-500 ml-2" x-text="'(' + err.slug + ')'"></span>
+                                    </div>
+                                    <div class="text-xs text-red-300 max-w-md truncate" x-text="err.error"></div>
+                                    <button @click="triggerCrawl(err.tenant_id, err.tenant_name)" class="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded hover:bg-red-500/30 ml-2">Re-crawl</button>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Never Crawled Alert -->
+                    <div x-show="neverCrawled.length > 0" class="card p-6 mb-8 border-l-4 border-yellow-500 bg-yellow-500/5">
+                        <h3 class="font-semibold text-yellow-400 mb-3">📋 Tenants Never Crawled</h3>
+                        <div class="space-y-2">
+                            <template x-for="nc in neverCrawled" :key="nc.tenant_id">
+                                <div class="flex items-center justify-between p-3 bg-black/20 rounded">
+                                    <div>
+                                        <span class="font-medium" x-text="nc.tenant_name"></span>
+                                        <span class="text-xs text-gray-500 ml-2" x-text="'(' + nc.slug + ')'"></span>
+                                        <span class="text-xs text-gray-600 ml-2" x-text="nc.domain"></span>
+                                    </div>
+                                    <button @click="triggerCrawl(nc.tenant_id, nc.tenant_name)" class="px-2 py-1 bg-yellow-500/20 text-yellow-400 text-xs rounded hover:bg-yellow-500/30">Start Crawl</button>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Recent Tenants -->
+                    <div class="card p-6">
+                        <h3 class="font-semibold mb-4">Recent Tenants</h3>
+                        <div x-show="loadingTenants" class="text-center py-8 text-gray-400">
+                            <div class="spinner mx-auto mb-2"></div>
+                            Loading...
+                        </div>
+                        <div x-show="!loadingTenants && tenants.length === 0" class="text-center py-8 text-gray-400">
+                            No tenants yet.
+                        </div>
+                        <div x-show="!loadingTenants && tenants.length > 0" class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead class="text-gray-400 border-b border-white/10">
+                                    <tr>
+                                        <th class="text-left py-3 px-4">Name</th>
+                                        <th class="text-left py-3 px-4">Slug</th>
+                                        <th class="text-left py-3 px-4">Domain</th>
+                                        <th class="text-left py-3 px-4">Plan</th>
+                                        <th class="text-left py-3 px-4">Crawl</th>
+                                        <th class="text-left py-3 px-4">Docs</th>
+                                        <th class="text-left py-3 px-4">Trial Ends</th>
+                                        <th class="text-left py-3 px-4">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template x-for="t in tenants.slice(0, 10)" :key="t.id">
+                                        <tr class="border-b border-white/5 hover:bg-white/5">
+                                            <td class="py-3 px-4 font-medium" x-text="t.name"></td>
+                                            <td class="py-3 px-4 font-mono text-xs" x-text="t.slug"></td>
+                                            <td class="py-3 px-4 text-xs text-gray-400" x-text="t.domain"></td>
+                                            <td class="py-3 px-4" x-text="t.subscription_plan || 'trial'"></td>
+                                            <td class="py-3 px-4">
+                                                <span class="px-2 py-1 rounded text-xs"
+                                                      :class="getCrawlBadgeClass(t)"
+                                                      x-text="getCrawlLabel(t)"></span>
+                                            </td>
+                                            <td class="py-3 px-4 text-xs" x-text="t.document_count || 0"></td>
+                                            <td class="py-3 px-4 text-xs" x-text="t.trial_ends_at ? formatDate(t.trial_ends_at) : '-'"></td>
+                                            <td class="py-3 px-4">
+                                                <span class="px-2 py-1 rounded text-xs"
+                                                      :class="t.is_active ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'"
+                                                      x-text="t.is_active ? 'Active' : 'Inactive'"></span>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========== TENANTS TAB ========== -->
+                <div x-show="activeTab === 'tenants'" x-transition>
+                    <!-- New Registrations for Sales Follow-up -->
+                    <div class="card p-6 mb-6 border border-yellow-500/30">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-semibold text-yellow-400">🆕 New Registrations (Last 30 Days)</h3>
+                            <span class="text-xs text-yellow-400/70">For sales follow-up → Call when trial ends</span>
+                        </div>
+                        
+                        <div x-show="loadingTenants" class="text-center py-4 text-gray-400">Loading...</div>
+                        
+                        <div x-show="!loadingTenants && recentTenants.length === 0" class="text-center py-4 text-gray-500">
+                            No new registrations in the last 30 days
+                        </div>
+                        
+                        <div x-show="!loadingTenants && recentTenants.length > 0" class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead class="text-yellow-400/70 border-b border-yellow-500/20">
+                                    <tr>
+                                        <th class="text-left py-2 px-3">Registered</th>
+                                        <th class="text-left py-2 px-3">Company</th>
+                                        <th class="text-left py-2 px-3">Email</th>
+                                        <th class="text-left py-2 px-3">Website</th>
+                                        <th class="text-left py-2 px-3">Trial Ends</th>
+                                        <th class="text-left py-2 px-3">Status</th>
+                                        <th class="text-left py-2 px-3">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template x-for="t in recentTenants" :key="t.id">
+                                        <tr class="border-b border-yellow-500/10 hover:bg-yellow-500/5">
+                                            <td class="py-2 px-3 text-xs" x-text="t.created_at ? new Date(t.created_at).toLocaleDateString() : '-'"></td>
+                                            <td class="py-2 px-3 font-medium" x-text="t.name"></td>
+                                            <td class="py-2 px-3 text-xs text-blue-300" x-text="t.contact_email || '-'"></td>
+                                            <td class="py-2 px-3 text-xs text-gray-400" x-text="(t.website_url || '-').substring(0, 30)"></td>
+                                            <td class="py-2 px-3 text-xs" x-text="t.trial_ends_at ? new Date(t.trial_ends_at).toLocaleDateString() : 'N/A'"></td>
+                                            <td class="py-2 px-3">
+                                                <span class="px-2 py-1 rounded text-xs"
+                                                      :class="t.is_active ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'"
+                                                      x-text="t.is_active ? 'Active' : 'Inactive'"></span>
+                                            </td>
+                                            <td class="py-2 px-3">
+                                                <button @click="viewTenantDetail(t)" class="text-xs text-blue-400 hover:text-blue-300">View</button>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="card p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="font-semibold">All Tenants</h3>
+                            <input type="text" x-model="tenantSearch" placeholder="Search tenants..." class="input-field px-4 py-2 text-sm text-white w-64">
+                        </div>
+
+                        <div x-show="loadingTenants" class="text-center py-8 text-gray-400">
+                            <div class="spinner mx-auto mb-2"></div>
+                            Loading...
+                        </div>
+
+                        <div x-show="!loadingTenants && filteredTenants.length > 0" class="overflow-x-auto max-h-[600px] overflow-y-auto">
+                            <table class="w-full text-sm">
+                                <thead class="text-gray-400 border-b border-white/10 sticky top-0 bg-[#0f172a] z-10">
+                                    <tr>
+                                        <th class="text-left py-3 px-4">Name</th>
+                                        <th class="text-left py-3 px-4">Email</th>
+                                        <th class="text-left py-3 px-4">Slug</th>
+                                        <th class="text-left py-3 px-4">Domain</th>
+                                        <th class="text-left py-3 px-4">Industry</th>
+                                        <th class="text-left py-3 px-4">Plan</th>
+                                        <th class="text-left py-3 px-4">Crawl</th>
+                                        <th class="text-left py-3 px-4">Docs</th>
+                                        <th class="text-left py-3 px-4">Trial Ends</th>
+                                        <th class="text-left py-3 px-4">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template x-for="t in filteredTenants" :key="t.id">
+                                        <tr class="border-b border-white/5 hover:bg-white/5">
+                                            <td class="py-3 px-4 font-medium" x-text="t.name"></td>
+                                            <td class="py-3 px-4 text-xs text-blue-300" x-text="t.contact_email || '-'"></td>
+                                            <td class="py-3 px-4 font-mono text-xs" x-text="t.slug"></td>
+                                            <td class="py-3 px-4 text-xs text-gray-400" x-text="t.domain"></td>
+                                            <td class="py-3 px-4 text-xs" x-text="t.industry || '-'"></td>
+                                            <td class="py-3 px-4" x-text="t.subscription_plan || 'trial'"></td>
+                                            <td class="py-3 px-4">
+                                                <span class="px-2 py-1 rounded text-xs"
+                                                      :class="getCrawlBadgeClass(t)"
+                                                      x-text="getCrawlLabel(t)"></span>
+                                            </td>
+                                            <td class="py-3 px-4 text-xs" x-text="t.document_count || 0"></td>
+                                            <td class="py-3 px-4 text-xs" x-text="t.trial_ends_at ? formatDate(t.trial_ends_at) : '-'"></td>
+                                            <td class="py-3 px-4">
+                                                <div class="flex items-center gap-2">
+                                                    <button @click="triggerCrawl(t.id, t.name)" class="px-3 py-1 bg-blue-500/20 text-blue-400 text-xs rounded hover:bg-blue-500/30">Crawl</button>
+                                                    <button @click="showExtendTrial(t)" class="px-3 py-1 bg-indigo-500/20 text-indigo-400 text-xs rounded hover:bg-indigo-500/30">Extend Trial</button>
+                                                    <button @click="toggleTenantStatus(t)" class="px-3 py-1 text-xs rounded"
+                                                            :class="t.is_active ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' : 'bg-green-500/20 text-green-400 hover:bg-green-500/30'"
+                                                            x-text="t.is_active ? 'Deactivate' : 'Activate'"></button>
+                                                     <button @click="viewTenantDetail(t)" class="px-3 py-1 bg-purple-500/20 text-purple-400 text-xs rounded hover:bg-purple-500/30">View/Edit</button>
+                                                     <button @click="confirmDeleteTenant(t)" class="px-3 py-1 bg-red-500/20 text-red-400 text-xs rounded hover:bg-red-500/30">Delete</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Extend Trial Modal -->
+                    <div x-show="showTrialModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100]" x-cloak>
+                        <div class="card p-6 w-full max-w-md">
+                            <h3 class="font-semibold mb-4">Extend Trial</h3>
+                            <p class="text-sm text-gray-400 mb-4" x-text="'For: ' + selectedTenant?.name"></p>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-1">Days to Extend (1-30)</label>
+                                    <input type="number" x-model.number="trialExtensionDays" min="1" max="30" class="input-field w-full px-4 py-2 text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-1">Reason (optional)</label>
+                                    <input type="text" x-model="trialExtensionReason" class="input-field w-full px-4 py-2 text-white">
+                                </div>
+                                <div class="flex gap-3">
+                                    <button @click="extendTrial()" class="btn-primary px-4 py-2 rounded-lg text-sm font-medium text-white">Extend</button>
+                                    <button @click="showTrialModal = false" class="px-4 py-2 bg-white/10 rounded-lg text-sm hover:bg-white/20">Cancel</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Delete Tenant Modal -->
+                    <div x-show="showDeleteModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100]" x-cloak>
+                        <div class="card p-6 w-full max-w-md border border-red-500/30">
+                            <h3 class="font-semibold mb-2 text-red-400">⚠️ Delete Tenant</h3>
+                            <div class="space-y-4">
+                                <div class="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-300">
+                                    This will permanently delete <strong class="text-white" x-text="deletingTenant?.name"></strong> and all associated data — chat history, documents, API keys, embeddings, and users. This action <strong class="text-white">cannot be undone</strong>.
+                                </div>
+                                <div class="text-sm text-gray-400 space-y-1">
+                                    <p><span class="text-gray-500">Slug:</span> <span class="font-mono" x-text="deletingTenant?.slug"></span></p>
+                                    <p><span class="text-gray-500">Email:</span> <span x-text="deletingTenant?.contact_email || '-'"></span></p>
+                                    <p><span class="text-gray-500">Domain:</span> <span x-text="deletingTenant?.domain || '-'"></span></p>
+                                    <p><span class="text-gray-500">Created:</span> <span x-text="deletingTenant?.created_at ? formatDate(deletingTenant.created_at) : '-'"></span></p>
+                                    <p><span class="text-gray-500">Documents:</span> <span x-text="deletingTenant?.document_count || 0"></span></p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-1">Type the tenant name to confirm:</label>
+                                    <input type="text" x-model="deleteConfirmText" placeholder="e.g. Acme Corp"
+                                        class="input-field w-full px-4 py-2 text-white text-sm">
+                                </div>
+                                <div class="flex gap-3">
+                                    <button @click="executeDeleteTenant()" :disabled="deleteConfirmText !== (deletingTenant?.name || '')"
+                                        class="px-4 py-2 bg-red-600 text-white text-sm rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red-700 transition">Permanently Delete</button>
+                                    <button @click="showDeleteModal = false; deletingTenant = null; deleteConfirmText = ''"
+                                        class="px-4 py-2 bg-white/10 rounded-lg text-sm hover:bg-white/20">Cancel</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========== BILLING TAB ========== -->
+                <div x-show="activeTab === 'billing'" x-transition>
+                    <!-- Pending PayNow Payments -->
+                    <div class="card p-6 mb-6">
+                        <h3 class="font-semibold mb-4">Pending PayNow Payments</h3>
+                        <div x-show="pendingPayments.length === 0" class="text-center py-8 text-gray-400">
+                            No pending payments.
+                        </div>
+                        <div x-show="pendingPayments.length > 0" class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead class="text-gray-400 border-b border-white/10">
+                                    <tr>
+                                        <th class="text-left py-3 px-4">Invoice ID</th>
+                                        <th class="text-left py-3 px-4">Tenant ID</th>
+                                        <th class="text-left py-3 px-4">Amount</th>
+                                        <th class="text-left py-3 px-4">Reference</th>
+                                        <th class="text-left py-3 px-4">Created</th>
+                                        <th class="text-left py-3 px-4">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template x-for="p in pendingPayments" :key="p.invoice_id">
+                                        <tr class="border-b border-white/5 hover:bg-white/5">
+                                            <td class="py-3 px-4 font-mono text-xs" x-text="p.invoice_id.substring(0, 8) + '...'"></td>
+                                            <td class="py-3 px-4 font-mono text-xs" x-text="p.tenant_id.substring(0, 8) + '...'"></td>
+                                            <td class="py-3 px-4" x-text="'$' + p.amount"></td>
+                                            <td class="py-3 px-4 font-mono text-xs" x-text="p.reference"></td>
+                                            <td class="py-3 px-4 text-xs" x-text="formatDate(p.created_at)"></td>
+                                            <td class="py-3 px-4">
+                                                <button @click="verifyPayment(p.invoice_id)" class="px-3 py-1 bg-green-500/20 text-green-400 text-xs rounded hover:bg-green-500/30">Verify</button>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Subscription Plans -->
+                    <div class="card p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-semibold">Subscription Plans</h3>
+                            <button @click="showCreatePlan = true" class="btn-primary px-4 py-2 rounded-lg text-sm font-medium text-white">+ New Plan</button>
+                        </div>
+                        <div x-show="plans.length === 0" class="text-center py-8 text-gray-400">
+                            No plans configured.
+                        </div>
+                        <div x-show="plans.length > 0" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <template x-for="plan in plans" :key="plan.id">
+                                <div class="card p-4" :class="{ 'border-indigo-500/30': plan.is_active }">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <h4 class="font-semibold" x-text="plan.display_name"></h4>
+                                        <span class="px-2 py-1 rounded text-xs"
+                                              :class="plan.is_active ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'"
+                                              x-text="plan.is_active ? 'Active' : 'Inactive'"></span>
+                                    </div>
+                                    <p class="text-2xl font-bold mb-2">$<span x-text="plan.price_monthly"></span><span class="text-sm text-gray-400 font-normal">/mo</span></p>
+                                    <ul class="text-xs text-gray-400 space-y-1">
+                                        <li x-text="plan.monthly_message_limit.toLocaleString() + ' messages/month'"></li>
+                                        <li x-text="plan.max_documents + ' documents'"></li>
+                                        <li x-text="plan.trial_days + ' day trial'"></li>
+                                        <li x-show="plan.includes_whatsapp">WhatsApp included</li>
+                                    </ul>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========== QUALITY TAB ========== -->
+                <div x-show="activeTab === 'quality'" x-transition>
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-lg font-semibold">Quality Dashboard</h2>
+                        <div class="flex items-center gap-3">
+                            <div x-show="pipelineState === 'running'" class="flex items-center gap-2 text-amber-400 text-xs">
+                                <div class="spinner w-3 h-3"></div>
+                                <span x-text="pipelineMsg || 'Running...'"></span>
+                            </div>
+                            <div x-show="pipelineState === 'completed'" class="text-green-400 text-xs flex items-center gap-1">
+                                <span>✓</span>
+                                <span x-text="pipelineMsg || 'Completed'"></span>
+                            </div>
+                            <div x-show="pipelineState === 'failed'" class="text-red-400 text-xs flex items-center gap-1">
+                                <span>✗</span>
+                                <span x-text="pipelineMsg || 'Failed'"></span>
+                            </div>
+                            <button @click="runPipeline()" :disabled="pipelineRunning" class="btn-primary px-4 py-2 rounded text-sm font-semibold text-white flex items-center gap-2">
+                                <div x-show="pipelineRunning" class="spinner w-4 h-4"></div>
+                                <span x-text="pipelineRunning ? 'Running...' : 'Run Pipeline Now'"></span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Summary Cards -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                        <div class="card p-4 border-l-4 border-indigo-500">
+                            <div class="text-xs text-gray-400 uppercase tracking-wide mb-1">Avg Quality Score</div>
+                            <div class="text-2xl font-bold text-indigo-400" x-text="quality.avgScore != null ? (quality.avgScore * 100).toFixed(0) + '%' : '—'"></div>
+                        </div>
+                        <div class="card p-4 border-l-4 border-amber-500">
+                            <div class="text-xs text-gray-400 uppercase tracking-wide mb-1">Failure Patterns</div>
+                            <div class="text-2xl font-bold text-amber-400" x-text="quality.failureCount ?? '—'"></div>
+                        </div>
+                        <div class="card p-4 border-l-4 border-green-500">
+                            <div class="text-xs text-gray-400 uppercase tracking-wide mb-1">Pending Candidates</div>
+                            <div class="text-2xl font-bold text-green-400" x-text="quality.pendingCandidates ?? '—'"></div>
+                        </div>
+                        <div class="card p-4 border-l-4 border-blue-500">
+                            <div class="text-xs text-gray-400 uppercase tracking-wide mb-1">Approved Changes</div>
+                            <div class="text-2xl font-bold text-blue-400" x-text="quality.approvedChanges ?? '—'"></div>
+                        </div>
+                    </div>
+
+                    <!-- Quality Trend Chart -->
+                    <div class="card p-6 mb-6">
+                        <h3 class="font-semibold mb-4">Quality Score Trend (14 days)</h3>
+                        <div x-show="quality.trendLoading" class="text-center py-8 text-gray-400 text-sm">
+                            <div class="spinner mx-auto mb-2"></div>
+                            Loading...
+                        </div>
+                        <div x-show="!quality.trendLoading && (!quality.trendLabels || quality.trendLabels.length === 0)" class="text-center py-8 text-gray-500 text-sm">
+                            No quality data yet. Run the pipeline or wait for daily scores.
+                        </div>
+                        <div x-show="!quality.trendLoading && quality.trendLabels && quality.trendLabels.length > 0">
+                            <canvas id="qualityTrendChart" class="w-full h-48"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Failure Patterns -->
+                    <div class="card p-6 mb-6">
+                        <h3 class="font-semibold mb-4">Failure Patterns</h3>
+                        <div x-show="quality.patternsLoading" class="text-center py-6 text-gray-400 text-sm">
+                            <div class="spinner mx-auto mb-2"></div>
+                            Loading...
+                        </div>
+                        <div x-show="!quality.patternsLoading && quality.patterns.length === 0" class="text-center py-6 text-gray-500 text-sm">
+                            No failure patterns detected yet.
+                        </div>
+                        <div x-show="!quality.patternsLoading && quality.patterns.length > 0" class="space-y-3">
+                            <template x-for="p in quality.patterns" :key="p.id">
+                                <div class="bg-white/5 rounded-lg p-4 flex items-start justify-between">
+                                    <div class="flex-1">
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <span class="text-xs font-semibold uppercase px-2 py-0.5 rounded"
+                                                  :class="{
+                                                      'bg-red-500/20 text-red-400': p.pattern_type === 'hallucination',
+                                                      'bg-orange-500/20 text-orange-400': p.pattern_type === 'off_topic',
+                                                      'bg-yellow-500/20 text-yellow-400': p.pattern_type === 'too_vague',
+                                                      'bg-blue-500/20 text-blue-400': p.pattern_type === 'incomplete',
+                                                      'bg-gray-500/20 text-gray-400': p.pattern_type === 'generic'
+                                                  }"
+                                                  x-text="p.pattern_type || p.pattern_name"></span>
+                                            <span x-show="p.channel" class="text-[10px] font-medium uppercase px-1.5 py-0.5 rounded"
+                                                  :class="p.channel === 'whatsapp' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'"
+                                                  x-text="p.channel"></span>
+                                            <span class="text-xs text-gray-500" x-text="'Impact: ' + (p.impact_score ? p.impact_score.toFixed(2) : '—')"></span>
+                                        </div>
+                                        <p class="text-sm text-gray-300" x-text="p.description || p.pattern_name"></p>
+                                        <p class="text-xs text-gray-500 mt-1" x-text="'Affected: ' + (p.message_count || 0) + ' messages'"></p>
+                                    </div>
+                                    <button @click="viewPatternMessages(p)" class="shrink-0 px-3 py-1 text-xs bg-indigo-500/20 text-indigo-400 rounded hover:bg-indigo-500/30 ml-3">View <span x-text="p.message_count || 0"></span> msgs</button>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Improvement Candidates -->
+                    <div class="card p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-semibold">Improvement Candidates</h3>
+                            <div class="flex gap-2">
+                                <button @click="loadCandidates('pending')" :class="quality.candidateFilter === 'pending' ? 'bg-indigo-500/30 text-indigo-300' : 'bg-white/5 text-gray-400'" class="px-3 py-1 text-xs rounded">Pending</button>
+                                <button @click="loadCandidates('approved')" :class="quality.candidateFilter === 'approved' ? 'bg-green-500/30 text-green-300' : 'bg-white/5 text-gray-400'" class="px-3 py-1 text-xs rounded">Approved</button>
+                                <button @click="loadCandidates('rejected')" :class="quality.candidateFilter === 'rejected' ? 'bg-red-500/30 text-red-300' : 'bg-white/5 text-gray-400'" class="px-3 py-1 text-xs rounded">Rejected</button>
+                            </div>
+                        </div>
+                        <div x-show="quality.candidatesLoading" class="text-center py-6 text-gray-400 text-sm">
+                            <div class="spinner mx-auto mb-2"></div>
+                            Loading...
+                        </div>
+                        <div x-show="!quality.candidatesLoading && quality.candidates.length === 0" class="text-center py-6 text-gray-500 text-sm">
+                            No improvement candidates found.
+                        </div>
+                        <div x-show="!quality.candidatesLoading && quality.candidates.length > 0">
+                            <template x-for="c in quality.candidates" :key="c.id">
+                                <div class="bg-white/5 rounded-lg p-4 mb-3 border border-white/10">
+                                    <div class="flex items-start justify-between mb-2">
+                                        <div>
+                                            <span class="text-xs font-semibold uppercase px-2 py-0.5 rounded"
+                                                  :class="{
+                                                      'bg-green-500/20 text-green-400': c.status === 'approved',
+                                                      'bg-red-500/20 text-red-400': c.status === 'rejected',
+                                                      'bg-amber-500/20 text-amber-400': c.status === 'pending'
+                                                  }"
+                                                  x-text="c.status"></span>
+                                            <span class="text-xs text-gray-500 ml-2" x-text="'Variant: ' + (c.improvement?.variant_name || '—')"></span>
+                                            <span class="text-xs text-gray-500 ml-2" x-text="'Score Δ: +' + (c.improvement?.delta_pct ? c.improvement.delta_pct + '%' : '—')"></span>
+                                        </div>
+                                        <div x-show="c.status === 'pending'" class="flex gap-2">
+                                            <button @click="approveCandidate(c.id)" class="px-3 py-1 text-xs bg-green-500/20 text-green-400 rounded hover:bg-green-500/30">Approve</button>
+                                            <button @click="rejectCandidate(c.id)" class="px-3 py-1 text-xs bg-red-500/20 text-red-400 rounded hover:bg-red-500/30">Reject</button>
+                                        </div>
+                                    </div>
+                                    <p class="text-xs text-gray-400 mb-2" x-text="'Query: ' + (c.user_query?.substring(0, 200) || '—')"></p>
+                                    <div class="grid md:grid-cols-2 gap-3 text-sm">
+                                        <div class="bg-black/20 rounded p-3">
+                                            <p class="text-xs text-gray-500 mb-1">Original (Production) <span x-show="c.before?.score != null" class="text-gray-600" x-text="'[' + (c.before.score * 100).toFixed(0) + '%]'"></span></p>
+                                            <p class="text-gray-300 text-xs" x-text="c.before?.response?.substring(0, 300)"></p>
+                                        </div>
+                                        <div class="bg-green-500/5 rounded p-3 border border-green-500/20">
+                                            <p class="text-xs text-gray-500 mb-1">Improved (Variant) <span x-show="c.after?.score != null" class="text-green-400" x-text="'[' + (c.after.score * 100).toFixed(0) + '%]'"></span></p>
+                                            <p class="text-gray-300 text-xs" x-text="c.after?.response?.substring(0, 300)"></p>
+                                        </div>
+                                    </div>
+                                    <div class="mt-2 text-xs text-gray-600" x-text="'Message: ' + (c.message_id?.substring(0, 12) || '') + '... | Tenant: ' + (c.tenant_id?.substring(0, 8) || '') + '...'"></div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========== SETTINGS TAB ========== -->
+                <div x-show="activeTab === 'settings'" x-transition>
+                    <div class="card p-6 max-w-2xl">
+                        <h3 class="font-semibold mb-6">System Settings</h3>
+                        <div class="space-y-5">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1">Platform Name</label>
+                                <input type="text" value="SCUBE AI" class="input-field w-full px-4 py-2.5 text-white" disabled>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1">Default Trial Days</label>
+                                <input type="number" value="7" class="input-field w-full px-4 py-2.5 text-white" disabled>
+                                <p class="text-xs text-gray-500 mt-1">Configurable via subscription plans</p>
+                            </div>
+                            <div class="pt-4 border-t border-white/10">
+                                <h4 class="font-medium mb-3">Scheduled Jobs</h4>
+                                <div class="space-y-2 text-sm">
+                                    <div class="flex items-center justify-between p-3 bg-white/5 rounded">
+                                        <div>
+                                            <span class="text-gray-300">Daily Website Crawl</span>
+                                            <span class="text-xs text-gray-500 ml-2">Updates all tenant knowledge bases</span>
+                                        </div>
+                                        <code class="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">3:00 AM Daily</code>
+                                    </div>
+                                    <div class="flex items-center justify-between p-3 bg-white/5 rounded">
+                                        <div>
+                                            <span class="text-gray-300">Self-Learning (Q&A Extraction)</span>
+                                            <span class="text-xs text-gray-500 ml-2">Extracts patterns from conversations</span>
+                                        </div>
+                                        <code class="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">2:00 AM Daily</code>
+                                    </div>
+                                    <div class="flex items-center justify-between p-3 bg-white/5 rounded">
+                                        <div>
+                                            <span class="text-gray-300">Learning Pipeline</span>
+                                            <span class="text-xs text-gray-500 ml-2">Scoring, patterns, shadow eval, rollup</span>
+                                        </div>
+                                        <code class="text-xs bg-indigo-500/20 text-indigo-400 px-2 py-1 rounded">3:00 AM Daily</code>
+                                    </div>
+                                    <div class="flex items-center justify-between p-3 bg-white/5 rounded">
+                                        <div>
+                                            <span class="text-gray-300">Chat Leak Canary</span>
+                                            <span class="text-xs text-gray-500 ml-2">Monitors for chatbot failures</span>
+                                        </div>
+                                        <code class="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">Every 10 min</code>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="pt-4 border-t border-white/10">
+                                <h4 class="font-medium mb-3">API Endpoints</h4>
+                                <div class="space-y-2 text-sm">
+                                    <div class="flex items-center justify-between p-3 bg-white/5 rounded">
+                                        <span class="text-gray-400">Registration</span>
+                                        <code class="text-xs bg-black/30 px-2 py-1 rounded">POST /api/public/register</code>
+                                    </div>
+                                    <div class="flex items-center justify-between p-3 bg-white/5 rounded">
+                                        <span class="text-gray-400">Login</span>
+                                        <code class="text-xs bg-black/30 px-2 py-1 rounded">POST /api/public/login</code>
+                                    </div>
+                                    <div class="flex items-center justify-between p-3 bg-white/5 rounded">
+                                        <span class="text-gray-400">Tenant Portal</span>
+                                        <code class="text-xs bg-black/30 px-2 py-1 rounded">/public/dashboard</code>
+                                    </div>
+                                    <div class="flex items-center justify-between p-3 bg-white/5 rounded">
+                                        <span class="text-gray-400">Admin Dashboard</span>
+                                        <code class="text-xs bg-black/30 px-2 py-1 rounded">/admin/dashboard</code>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- WhatsApp Support Guide for Staff -->
+                            <div class="pt-4 border-t border-white/10">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h4 class="font-medium text-green-400">📱 WhatsApp Support Guide</h4>
+                                    <button @click="showWAHelp = !showWAHelp" class="text-xs text-indigo-400 hover:text-indigo-300" x-text="showWAHelp ? 'Hide Guide' : 'Show Guide'"></button>
+                                </div>
+                                
+                                <div x-show="showWAHelp" class="space-y-4 text-sm">
+                                    <!-- Quick Reference Card -->
+                                    <div class="p-4 bg-green-500/10 border border-green-500/20 rounded-xl">
+                                        <p class="font-semibold text-green-300 mb-2">🎯 Quick Reference for Support Staff</p>
+                                        <div class="grid md:grid-cols-2 gap-3 text-xs">
+                                            <div class="p-2 bg-white/5 rounded">
+                                                <p class="text-gray-300 font-medium">Webhook URL Pattern:</p>
+                                                <code class="text-indigo-300 break-all">/api/whatsapp/webhook/{tenant_id}</code>
+                                            </div>
+                                            <div class="p-2 bg-white/5 rounded">
+                                                <p class="text-gray-300 font-medium">Default Verify Token:</p>
+                                                <code class="text-indigo-300">scube_wa_verify_2024</code>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Two-Way Setup -->
+                                    <div class="p-4 bg-white/5 rounded-xl">
+                                        <p class="font-semibold text-white mb-3">🔄 Two-Way Configuration Flow</p>
+                                        
+                                        <div class="space-y-3">
+                                            <div class="flex gap-3">
+                                                <div class="w-8 h-8 bg-indigo-500/20 rounded-full flex items-center justify-center text-indigo-400 text-xs font-bold shrink-0">1</div>
+                                                <div>
+                                                    <p class="text-gray-300 font-medium">What Tenant GETS from MSG91:</p>
+                                                    <ul class="text-xs text-gray-400 mt-1 space-y-1 list-disc list-inside">
+                                                        <li><strong>Auth Key</strong> (e.g., 516065A2X1NLCv6a1167dcP1)</li>
+                                                        <li><strong>Integrated Number</strong> (e.g., 6580786788)</li>
+                                                        <li><strong>API Endpoint</strong> (usually default)</li>
+                                                    </ul>
+                                                    <p class="text-xs text-gray-500 mt-1">→ Tenant enters these in their dashboard</p>
+                                                </div>
+                                            </div>
+
+                                            <div class="flex gap-3">
+                                                <div class="w-8 h-8 bg-indigo-500/20 rounded-full flex items-center justify-center text-indigo-400 text-xs font-bold shrink-0">2</div>
+                                                <div>
+                                                    <p class="text-gray-300 font-medium">What Tenant GIVES to MSG91:</p>
+                                                    <ul class="text-xs text-gray-400 mt-1 space-y-1 list-disc list-inside">
+                                                        <li><strong>Webhook URL</strong> (auto-generated per tenant)</li>
+                                                        <li><strong>Verify Token</strong> (scube_wa_verify_2024)</li>
+                                                    </ul>
+                                                    <p class="text-xs text-gray-500 mt-1">→ Tenant copies these from dashboard to MSG91</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Common Issues -->
+                                    <div class="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
+                                        <p class="font-semibold text-yellow-300 mb-2">🛠️ Common Issues & Solutions</p>
+                                        <div class="space-y-2 text-xs">
+                                            <div class="p-2 bg-white/5 rounded">
+                                                <p class="text-gray-300 font-medium">"Messages not received by customer"</p>
+                                                <p class="text-gray-400">→ Check config_metadata has correct msg91_auth_key</p>
+                                                <p class="text-gray-400">→ Verify integrated_number matches MSG91 dashboard</p>
+                                                <p class="text-gray-400">→ Ensure + prefix in phone numbers (our code auto-adds this)</p>
+                                            </div>
+                                            <div class="p-2 bg-white/5 rounded">
+                                                <p class="text-gray-300 font-medium">"Webhook verification fails"</p>
+                                                <p class="text-gray-400">→ Verify token must be exactly: scube_wa_verify_2024</p>
+                                                <p class="text-gray-400">→ Webhook URL must include correct tenant_id</p>
+                                                <p class="text-gray-400">→ Check tenant has active WhatsApp config in database</p>
+                                            </div>
+                                            <div class="p-2 bg-white/5 rounded">
+                                                <p class="text-gray-300 font-medium">"Health check error"</p>
+                                                <p class="text-gray-400">→ Database schema issue - run fix_whatsapp_schema.py</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Database Check -->
+                                    <div class="p-4 bg-white/5 rounded-xl">
+                                        <p class="font-semibold text-white mb-2">🔍 Database Verification Query</p>
+                                        <code class="block p-3 bg-black/30 rounded text-xs text-gray-300 font-mono break-all">
+SELECT tenant_id, phone_number_id, webhook_verify_token,<br>
+config_metadata->>'msg91_auth_key' as auth_key,<br>
+config_metadata->>'msg91_integrated_number' as integrated<br>
+FROM whatsapp_configurations<br>
+WHERE tenant_id = 'TENANT_ID_HERE';
+                                        </code>
+                                    </div>
+
+                                    <!-- API Endpoints for Debugging -->
+                                    <div class="p-4 bg-white/5 rounded-xl">
+                                        <p class="font-semibold text-white mb-2">🔧 Debug API Endpoints</p>
+                                        <div class="space-y-1 text-xs">
+                                            <div class="flex justify-between p-2 bg-black/30 rounded">
+                                                <span class="text-gray-400">Health Check</span>
+                                                <code class="text-indigo-300">GET /api/whatsapp/health/{tenant_id}</code>
+                                            </div>
+                                            <div class="flex justify-between p-2 bg-black/30 rounded">
+                                                <span class="text-gray-400">List Messages</span>
+                                                <code class="text-indigo-300">GET /api/whatsapp/tenant/{tenant_id}/messages</code>
+                                            </div>
+                                            <div class="flex justify-between p-2 bg-black/30 rounded">
+                                                <span class="text-gray-400">Get Config</span>
+                                                <code class="text-indigo-300">GET /api/whatsapp/configure/{tenant_id}</code>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Example: scubeinfotech -->
+                                    <div class="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl">
+                                        <p class="font-semibold text-indigo-300 mb-2">📋 Example: scubeinfotech (Working Config)</p>
+                                        <div class="text-xs space-y-1 text-gray-400">
+                                            <p><span class="text-gray-300">Tenant ID:</span> fb8a4ec0-e463-4678-8178-32b8332db73a</p>
+                                            <p><span class="text-gray-300">Phone Number ID:</span> 130762373455172</p>
+                                            <p><span class="text-gray-300">Integrated Number:</span> 6580786788</p>
+                                            <p><span class="text-gray-300">Verify Token:</span> scube_wa_verify_2024</p>
+                                            <p><span class="text-gray-300">Webhook:</span> /api/whatsapp/webhook/fb8a4ec0-e463-4678-8178-32b8332db73a</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+<script>
+function adminDashboard() {
+    return {
+        authenticated: false,
+        activeTab: 'overview',
+        adminUsername: '',
+        loginForm: { username: '', password: '' },
+        loginError: '',
+        loginLoading: false,
+        stats: { totalTenants: 0, activeTrials: 0, paidSubscriptions: 0, pendingPayments: 0, crawlCompleted: 0, crawlFailed: 0, crawlNeverRun: 0, crawlInProgress: 0, newRegistrations7d: 0 },
+        tenants: [],
+        recentTenants: [],
+        loadingTenants: false,
+        tenantSearch: '',
+        plans: [],
+        pendingPayments: [],
+        crawlErrors: [],
+        neverCrawled: [],
+        crmStats: { total_contacts: 0, confirmed_leads: 0, tentative_leads: 0, leads_today: 0, pending_followups: 0, top_tenants: [] },
+        loadingCRMStats: false,
+        showTrialModal: false,
+        selectedTenant: null,
+        trialExtensionDays: 7,
+        trialExtensionReason: '',
+        showDeleteModal: false,
+        deletingTenant: null,
+        deleteConfirmText: '',
+        showCreatePlan: false,
+        showTenantDetailModal: false,
+        loadingDetail: false,
+        detailTab: 'basic',
+        detailTabs: [
+            { id: 'basic',         label: 'Basic' },
+            { id: 'subscription',  label: 'Subscription' },
+            { id: 'ai',            label: 'AI Config' },
+            { id: 'knowledge',     label: 'Knowledge & Profile' },
+            { id: 'progress',      label: 'Progress & Reports' },
+            { id: 'integrations',  label: 'Integrations' },
+            { id: 'widget',        label: 'Widget Code' },
+        ],
+        subscriptionPacks: [
+            { tier: 'starter',  label: 'Starter — 2,000 msgs/mo' },
+            { tier: 'growth',   label: 'Growth — 10,000 msgs/mo + WhatsApp' },
+            { tier: 'enterprise', label: 'Enterprise — 100,000 msgs/mo + SLA' },
+        ],
+        editingTenant: {},
+        toast: { show: false, message: '', type: 'success' },
+        showWAHelp: false,
+        showPatternModal: false,
+        patternLoading: false,
+        patternDetail: null,
+        pipelineRunning: false,
+        pipelineState: 'idle',
+        pipelineMsg: '',
+        pipelineStatusTimer: null,
+        theme: localStorage.getItem('theme') || 'dark',
+        profileOpen: false,
+        showChangePassword: false,
+        pwdForm: { current: '', newPwd: '', confirm: '' },
+        pwdLoading: false,
+        pwdError: '',
+        quality: {
+            avgScore: null,
+            failureCount: 0,
+            pendingCandidates: 0,
+            approvedChanges: 0,
+            trendLoading: false,
+            trendLabels: [],
+            trendData: [],
+            patternsLoading: false,
+            patterns: [],
+            candidatesLoading: false,
+            candidates: [],
+            candidateFilter: 'pending',
+        },
+
+        get tabTitle() {
+            return { overview: 'Overview', tenants: 'Tenant Management', billing: 'Billing & Payments', quality: 'Quality Dashboard', settings: 'Settings' }[this.activeTab];
+        },
+
+get filteredTenants() {
+            if (!this.tenantSearch) return this.tenants;
+            const q = this.tenantSearch.toLowerCase();
+            return this.tenants.filter(t =>
+                t.name.toLowerCase().includes(q) ||
+                t.slug.toLowerCase().includes(q) ||
+                (t.industry && t.industry.toLowerCase().includes(q))
+            );
+        },
+
+        get recentTenants() {
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            return this.tenants
+                .filter(t => t.created_at && new Date(t.created_at) >= thirtyDaysAgo)
+                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        },
+
+async init() {
+            // Session persistence — restore login on page refresh
+            const token = localStorage.getItem('admin_token');
+            this.adminUsername = localStorage.getItem('admin_username') || '';
+
+            if (!token) {
+                this.authenticated = false;
+                return;
+            }
+
+            // Validate token with the server
+            try {
+                const resp = await fetch('/api/admin/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!resp.ok) throw new Error('Invalid token');
+                const data = await resp.json();
+                this.adminUsername = data.username || '';
+                this.authenticated = true;
+                await Promise.all([
+                    this.loadStats(),
+                    this.loadTenants(),
+                    this.loadPlans(),
+                    this.loadPendingPayments(),
+                    this.loadCRMStats(),
+                ]);
+            } catch {
+                localStorage.removeItem('admin_token');
+                localStorage.removeItem('admin_username');
+                this.authenticated = false;
+            }
+        },
+
+        async login() {
+            this.loginError = '';
+            if (!this.loginForm.username || !this.loginForm.password) {
+                this.loginError = 'Please enter username and password.';
+                return;
+            }
+
+            this.loginLoading = true;
+            try {
+                const resp = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: this.loginForm.username,
+                        password: this.loginForm.password,
+                    }),
+                });
+
+                const data = await resp.json();
+                if (!resp.ok) {
+                    this.loginError = data.detail || 'Login failed.';
+                    return;
+                }
+
+                localStorage.setItem('admin_token', data.access_token);
+                localStorage.setItem('admin_username', data.username);
+                this.adminUsername = data.username;
+                this.authenticated = true;
+                await Promise.all([
+                    this.loadStats(),
+                    this.loadTenants(),
+                    this.loadPlans(),
+                    this.loadPendingPayments(),
+                ]);
+            } catch {
+                this.loginError = 'Network error. Please try again.';
+            } finally {
+                this.loginLoading = false;
+            }
+        },
+
+        logout() {
+            localStorage.removeItem('admin_token');
+            localStorage.removeItem('admin_username');
+            this.authenticated = false;
+            this.loginForm = { username: '', password: '' };
+        },
+
+        toggleTheme() {
+            this.theme = this.theme === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('theme', this.theme);
+            if (this.theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
+            else document.documentElement.removeAttribute('data-theme');
+        },
+
+        async changePassword() {
+            this.pwdError = '';
+            if (!this.pwdForm.current || !this.pwdForm.newPwd || !this.pwdForm.confirm) {
+                this.pwdError = 'All fields required';
+                return;
+            }
+            if (this.pwdForm.newPwd.length < 6) {
+                this.pwdError = 'New password must be at least 6 characters';
+                return;
+            }
+            if (this.pwdForm.newPwd !== this.pwdForm.confirm) {
+                this.pwdError = 'Passwords do not match';
+                return;
+            }
+            this.pwdLoading = true;
+            try {
+                const resp = await fetch('/api/admin/reset-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` },
+                    body: JSON.stringify({ current_password: this.pwdForm.current, new_password: this.pwdForm.newPwd })
+                });
+                const data = await resp.json();
+                if (resp.ok) {
+                    this.showToast('Password updated successfully');
+                    this.showChangePassword = false;
+                    this.pwdForm = { current: '', newPwd: '', confirm: '' };
+                } else {
+                    this.pwdError = data.detail || 'Failed to update password';
+                }
+            } catch (e) {
+                this.pwdError = 'Network error';
+            }
+            this.pwdLoading = false;
+        },
+
+        async loadStats() {
+            try {
+                const resp = await fetch('/api/admin/analytics/overview', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+                });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    this.stats.totalTenants = data.total_tenants || 0;
+                    this.stats.activeTrials = data.active_trials || 0;
+                    this.stats.paidSubscriptions = data.paid_subscriptions || 0;
+                    this.stats.crawlCompleted = data.crawl_completed || 0;
+                    this.stats.crawlFailed = data.crawl_failed || 0;
+                    this.stats.crawlNeverRun = data.crawl_never_run || 0;
+                    this.stats.crawlInProgress = data.crawl_in_progress || 0;
+                    this.crawlErrors = data.last_crawl_errors || [];
+                    this.neverCrawled = data.never_crawled || [];
+                }
+            } catch { /* ignore */ }
+        },
+
+        async loadCRMStats() {
+            this.loadingCRMStats = true;
+            try {
+                const resp = await fetch('/api/admin/crm/admin-stats', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+                });
+                if (resp.ok) this.crmStats = await resp.json();
+            } catch { /* ignore */ } finally { this.loadingCRMStats = false; }
+        },
+
+        async loadTenants() {
+            this.loadingTenants = true;
+            try {
+                const resp = await fetch('/api/admin/tenants', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+                });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    this.tenants = data.tenants || [];
+                    this.stats.newRegistrations7d = data.recent_registrations?.new_7d || 0;
+                }
+            } catch { /* ignore */ } finally {
+                this.loadingTenants = false;
+            }
+        },
+
+        getCrawlLabel(t) {
+            const pct = parseInt(t.crawl_progress_percent || '0');
+            const stage = (t.crawl_progress_stage || '').toLowerCase();
+            if (pct === 100) return 'OK';
+            if (pct === 0 && (stage.includes('fail') || stage.includes('error'))) return 'Failed';
+            if (pct === 0 && (!t.crawl_progress_stage || t.crawl_progress_stage.trim() === '')) return 'Never';
+            if (pct > 0 && pct < 100) return pct + '%';
+            return 'Unknown';
+        },
+
+        getCrawlBadgeClass(t) {
+            const pct = parseInt(t.crawl_progress_percent || '0');
+            const stage = (t.crawl_progress_stage || '').toLowerCase();
+            if (pct === 100) return 'bg-green-500/20 text-green-400';
+            if (pct === 0 && (stage.includes('fail') || stage.includes('error'))) return 'bg-red-500/20 text-red-400';
+            if (pct === 0 && (!t.crawl_progress_stage || t.crawl_progress_stage.trim() === '')) return 'bg-yellow-500/20 text-yellow-400';
+            if (pct > 0 && pct < 100) return 'bg-blue-500/20 text-blue-400';
+            return 'bg-gray-500/20 text-gray-400';
+        },
+
+        async triggerCrawl(tenantId, tenantName) {
+            const tenant = this.tenants.find(t => t.id === tenantId);
+            if (!tenant) return;
+            const url = tenant.website_url || 'https://' + tenant.domain;
+            try {
+                const resp = await fetch(`/api/admin/crawl/${tenantId}?website_url=${encodeURIComponent(url)}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+                    },
+                    body: JSON.stringify({ include_footer: false })
+                });
+                if (resp.ok) {
+                    this.showToast(`Crawl started for ${tenantName}`, 'success');
+                    await this.loadTenants();
+                    await this.loadStats();
+                } else {
+                    const data = await resp.json();
+                    this.showToast(data.detail || 'Crawl failed', 'error');
+                }
+            } catch (e) {
+                this.showToast('Failed to start crawl', 'error');
+            }
+        },
+
+        async loadPlans() {
+            try {
+                const resp = await fetch('/api/admin/plans', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+                });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    this.plans = data.plans || [];
+                }
+            } catch { /* ignore */ }
+        },
+
+        async loadPendingPayments() {
+            try {
+                const resp = await fetch('/api/billing/paynow/pending', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+                });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    this.pendingPayments = data.payments || [];
+                    this.stats.pendingPayments = this.pendingPayments.length;
+                }
+            } catch { /* ignore */ }
+        },
+
+        showExtendTrial(tenant) {
+            this.selectedTenant = tenant;
+            this.trialExtensionDays = 7;
+            this.trialExtensionReason = '';
+            this.showTrialModal = true;
+        },
+
+        async extendTrial() {
+            if (!this.selectedTenant || this.trialExtensionDays < 1 || this.trialExtensionDays > 30) return;
+
+            try {
+                const resp = await fetch(`/api/admin/tenants/${this.selectedTenant.id}/extend-trial`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+                    },
+                    body: JSON.stringify({
+                        days: this.trialExtensionDays,
+                        reason: this.trialExtensionReason,
+                    }),
+                });
+
+                if (resp.ok) {
+                    this.showToast('Trial extended successfully');
+                    this.showTrialModal = false;
+                    await this.loadTenants();
+                } else {
+                    const data = await resp.json();
+                    this.showToast(data.detail || 'Failed to extend trial', 'error');
+                }
+            } catch {
+                this.showToast('Network error', 'error');
+            }
+        },
+
+        confirmDeleteTenant(tenant) {
+            this.deletingTenant = tenant;
+            this.deleteConfirmText = '';
+            this.showDeleteModal = true;
+        },
+
+        async executeDeleteTenant() {
+            if (!this.deletingTenant || this.deleteConfirmText !== this.deletingTenant.name) return;
+            const tenantId = this.deletingTenant.id;
+            const tenantName = this.deletingTenant.name;
+            let success = false;
+            try {
+                const resp = await fetch(`/api/admin/tenants/${tenantId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+                });
+                success = resp.ok;
+                if (!success) {
+                    const data = await resp.json().catch(() => ({}));
+                    this.showToast(data.detail || 'Failed to delete tenant', 'error');
+                    return;
+                }
+            } catch {
+                this.showToast('Network error', 'error');
+                return;
+            }
+            this.tenants = this.tenants.filter(t => t.id !== tenantId);
+            this.recentTenants = this.recentTenants.filter(t => t.id !== tenantId);
+            this.showDeleteModal = false;
+            this.deletingTenant = null;
+            this.deleteConfirmText = '';
+            this.showToast(`Tenant "${tenantName}" permanently deleted`, 'success');
+            this.loadStats().catch(() => {});
+        },
+
+        async toggleTenantStatus(tenant) {
+            if (!confirm(`${tenant.is_active ? 'Deactivate' : 'Activate'} ${tenant.name}?`)) return;
+
+            try {
+                const resp = await fetch(`/api/admin/tenants/${tenant.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+                    },
+                    body: JSON.stringify({ is_active: !tenant.is_active }),
+                });
+
+                if (resp.ok) {
+                    this.showToast(`Tenant ${tenant.is_active ? 'deactivated' : 'activated'}`);
+                    await this.loadTenants();
+                }
+            } catch {
+                this.showToast('Failed to update tenant', 'error');
+            }
+        },
+
+        async verifyPayment(invoiceId) {
+            if (!confirm('Verify this payment? Ensure payment is confirmed in bank statement.')) return;
+
+            try {
+                const resp = await fetch('/api/billing/paynow/verify', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+                    },
+                    body: JSON.stringify({ invoice_id: invoiceId, admin_notes: 'Verified by admin' }),
+                });
+
+                if (resp.ok) {
+                    this.showToast('Payment verified and subscription activated');
+                    await this.loadPendingPayments();
+                } else {
+                    const data = await resp.json();
+                    this.showToast(data.detail || 'Failed to verify', 'error');
+                }
+            } catch {
+                this.showToast('Network error', 'error');
+            }
+        },
+
+        formatDate(dateStr) {
+            if (!dateStr) return '-';
+            try {
+                const d = new Date(dateStr);
+                return d.toLocaleDateString('en-SG', { day: '2-digit', month: 'short', year: 'numeric' });
+            } catch {
+                return dateStr;
+            }
+        },
+
+        async viewTenantDetail(t) {
+            this.loadingDetail = true;
+            this.showTenantDetailModal = true;
+            this.detailTab = 'basic';
+            try {
+                const resp = await fetch(`/api/admin/tenants/${t.id}`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+                });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    this.editingTenant = {
+                        id: data.id,
+                        name: data.name || '',
+                        slug: data.slug || '',
+                        domain: data.domain || '',
+                        website_url: data.website_url || '',
+                        contact_email: data.contact_email || '',
+                        login_email: data.login_email || '',
+                        login_last_login_at: data.login_last_login_at || '',
+                        business_hours: data.business_hours || '',
+                        created_at: data.created_at || '',
+                        registration_source: data.registration_source || '',
+                        industry: data.industry || '',
+                        subscription_tier: data.subscription_tier || 'starter',
+                        subscription_status: data.subscription_status || '',
+                        trial_ends_at: data.trial_ends_at ? data.trial_ends_at.split('T')[0] : '',
+                        is_active: !!data.is_active,
+                        model_name: data.model_name || '',
+                        allowed_models: data.allowed_models || [],
+                        temperature: data.temperature ?? '',
+                        max_tokens: data.max_tokens ?? '',
+                        prompt_template: typeof data.prompt_template === 'string' ? data.prompt_template : (data.prompt_template ? JSON.stringify(data.prompt_template, null, 2) : ''),
+                        welcome_message: data.welcome_message || '',
+                        tone: data.tone || 'friendly',
+                        compliance_mode: data.compliance_mode || 'normal',
+                        out_of_scope_mode: data.out_of_scope_mode || 'strict_business',
+                        cta_goals: typeof data.cta_goals === 'string' ? data.cta_goals : (data.cta_goals ? JSON.stringify(data.cta_goals, null, 2) : ''),
+                        knowledge_context: typeof data.knowledge_context === 'string' ? data.knowledge_context : (data.knowledge_context ? JSON.stringify(data.knowledge_context, null, 2) : ''),
+                        guardrails: typeof data.guardrails === 'string' ? data.guardrails : (data.guardrails ? JSON.stringify(data.guardrails, null, 2) : ''),
+                        onboarding_stage: data.onboarding_stage || '',
+                        onboarding_notes: data.onboarding_notes || '',
+                        crawl_progress_percent: data.crawl_progress_percent ?? 0,
+                        crawl_progress_stage: data.crawl_progress_stage || '',
+                        crawl_progress_updated_at: data.crawl_progress_updated_at || '',
+                        daily_report_email: data.daily_report_email || '',
+                        daily_report_enabled: !!data.daily_report_enabled,
+                        external_api_url: data.external_api_url || '',
+                        external_api_enabled: !!data.external_api_enabled,
+                        escalation_threshold: data.escalation_threshold ?? '',
+                        enabled_channels: typeof data.enabled_channels === 'string' ? data.enabled_channels : (data.enabled_channels ? JSON.stringify(data.enabled_channels, null, 2) : ''),
+                    };
+                    try {
+                        const wcResp = await fetch(`/api/admin/tenants/${t.id}/widget-code`, {
+                            headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+                        });
+                        if (wcResp.ok) {
+                            const wc = await wcResp.json();
+                            this.editingTenant._widgetCode = wc.integration_snippet || '';
+                            this.editingTenant._widgetApiKey = wc.api_key || '';
+                            this.editingTenant._widgetApiUrl = wc.api_url || '';
+                        }
+                    } catch { /* ignore widget code fetch */ }
+                }
+            } catch { /* ignore */ } finally {
+                this.loadingDetail = false;
+            }
+        },
+
+        tryParseJson(val) {
+            if (!val.trim()) return val;
+            try { return JSON.parse(val); } catch { return val; }
+        },
+
+        async saveTenantDetail() {
+            if (!this.editingTenant || !this.editingTenant.name) return;
+            try {
+                const body = {
+                    name: this.editingTenant.name,
+                    domain: this.editingTenant.domain,
+                    website_url: this.editingTenant.website_url,
+                    contact_email: this.editingTenant.contact_email,
+                    business_hours: this.editingTenant.business_hours,
+                    industry: this.editingTenant.industry,
+                    subscription_tier: this.editingTenant.subscription_tier,
+                    subscription_status: this.editingTenant.subscription_status,
+                    trial_ends_at: this.editingTenant.trial_ends_at || null,
+                    is_active: this.editingTenant.is_active,
+                    model_name: this.editingTenant.model_name,
+                    temperature: this.editingTenant.temperature !== '' ? parseFloat(this.editingTenant.temperature) : null,
+                    max_tokens: this.editingTenant.max_tokens !== '' ? parseInt(this.editingTenant.max_tokens) : null,
+                    prompt_template: this.tryParseJson(this.editingTenant.prompt_template),
+                    welcome_message: this.editingTenant.welcome_message,
+                    tone: this.editingTenant.tone,
+                    compliance_mode: this.editingTenant.compliance_mode,
+                    out_of_scope_mode: this.editingTenant.out_of_scope_mode,
+                    cta_goals: this.tryParseJson(this.editingTenant.cta_goals),
+                    knowledge_context: this.tryParseJson(this.editingTenant.knowledge_context),
+                    guardrails: this.tryParseJson(this.editingTenant.guardrails),
+                    onboarding_stage: this.editingTenant.onboarding_stage,
+                    onboarding_notes: this.editingTenant.onboarding_notes,
+                    daily_report_email: this.editingTenant.daily_report_email,
+                    daily_report_enabled: this.editingTenant.daily_report_enabled,
+                    external_api_url: this.editingTenant.external_api_url,
+                    external_api_enabled: this.editingTenant.external_api_enabled,
+                    escalation_threshold: this.editingTenant.escalation_threshold !== '' ? parseFloat(this.editingTenant.escalation_threshold) : null,
+                };
+                const resp = await fetch(`/api/admin/tenants/${this.editingTenant.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+                    },
+                    body: JSON.stringify(body),
+                });
+                if (resp.ok) {
+                    this.showToast('Tenant saved successfully');
+                    this.showTenantDetailModal = false;
+                    await this.loadTenants();
+                } else {
+                    const data = await resp.json();
+                    this.showToast(data.detail || 'Failed to save tenant', 'error');
+                }
+            } catch {
+                this.showToast('Network error', 'error');
+            }
+        },
+
+        loadQualityData() {
+            this.loadQualityTrend();
+            this.loadQualityPatterns();
+            this.loadCandidates('pending');
+            this.loadQualitySummary();
+        },
+
+        async loadQualitySummary() {
+            try {
+                const resp = await fetch('/api/admin/quality/candidate-summary', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+                });
+                if (resp.ok) {
+                    const d = await resp.json();
+                    this.quality.pendingCandidates = d.pending ?? 0;
+                    this.quality.approvedChanges = d.approved ?? 0;
+                }
+            } catch { /* ignore */ }
+        },
+
+        async loadQualityTrend() {
+            this.quality.trendLoading = true;
+            try {
+                const resp = await fetch('/api/admin/quality/overview?days=14', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+                });
+                if (resp.ok) {
+                    const d = await resp.json();
+                    this.quality.avgScore = d.summary?.current_avg ?? null;
+                    this.quality.trendLabels = (d.trends?.dates || []).map(s => s?.substring(5, 10) || '');
+                    this.quality.trendData = d.trends?.overall || [];
+                    this.quality.failureCount = d.total_failure_patterns ?? 0;
+                    this.renderQualityChart();
+                }
+            } catch { /* ignore */ } finally {
+                this.quality.trendLoading = false;
+            }
+        },
+
+        loadQualityPatterns() {
+            this.quality.patternsLoading = true;
+            fetch('/api/admin/quality/failure-patterns?limit=10', {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+            })
+            .then(r => r.json())
+            .then(d => { this.quality.patterns = d.patterns || []; })
+            .catch(() => {})
+            .finally(() => { this.quality.patternsLoading = false; });
+        },
+
+        loadCandidates(filter) {
+            this.quality.candidateFilter = filter;
+            this.quality.candidatesLoading = true;
+            fetch(`/api/admin/quality/improvement-candidates?status=${filter}&limit=10`, {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+            })
+            .then(r => r.json())
+            .then(d => { this.quality.candidates = d.candidates || []; })
+            .catch(() => {})
+            .finally(() => { this.quality.candidatesLoading = false; });
+        },
+
+        async approveCandidate(id) {
+            try {
+                const resp = await fetch(`/api/admin/quality/improvement-candidates/${id}/approve`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+                    },
+                    body: JSON.stringify({ reviewed_by: this.adminUsername })
+                });
+                if (resp.ok) {
+                    this.showToast('Improvement approved');
+                    await this.loadCandidates(this.quality.candidateFilter);
+                    await this.loadQualitySummary();
+                } else {
+                    const d = await resp.json();
+                    this.showToast(d.detail || 'Failed to approve', 'error');
+                }
+            } catch {
+                this.showToast('Network error', 'error');
+            }
+        },
+
+        async rejectCandidate(id) {
+            try {
+                const resp = await fetch(`/api/admin/quality/improvement-candidates/${id}/reject`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+                    },
+                    body: JSON.stringify({ reviewed_by: this.adminUsername })
+                });
+                if (resp.ok) {
+                    this.showToast('Improvement rejected');
+                    await this.loadCandidates(this.quality.candidateFilter);
+                    await this.loadQualitySummary();
+                } else {
+                    const d = await resp.json();
+                    this.showToast(d.detail || 'Failed to reject', 'error');
+                }
+            } catch {
+                this.showToast('Network error', 'error');
+            }
+        },
+
+        async checkPipelineStatus() {
+            try {
+                const resp = await fetch('/api/admin/quality/pipeline/status', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+                });
+                if (resp.ok) {
+                    const st = await resp.json();
+                    this.pipelineState = st.state;
+                    this.pipelineMsg = st.message || '';
+                    if (st.state === 'completed' || st.state === 'failed') {
+                        if (this.pipelineStatusTimer) {
+                            clearInterval(this.pipelineStatusTimer);
+                            this.pipelineStatusTimer = null;
+                        }
+                        this.pipelineRunning = false;
+                        this.loadQualityTrend();
+                        this.loadQualityPatterns();
+                        this.loadCandidates('pending');
+                        this.loadQualitySummary();
+                        if (st.state === 'completed') {
+                            this.showToast(`Pipeline done: ${st.total_scored} scored, ${st.total_candidates} candidates (${st.elapsed_seconds}s)`);
+                        } else {
+                            this.showToast('Pipeline failed — check server logs', 'error');
+                        }
+                    }
+                }
+            } catch { /* ignore */ }
+        },
+
+        async runPipeline() {
+            this.pipelineRunning = true;
+            this.pipelineState = 'running';
+            this.pipelineMsg = 'Starting...';
+            try {
+                const resp = await fetch('/api/admin/quality/pipeline/run', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+                });
+                if (resp.ok) {
+                    this.showToast('Pipeline triggered — processing...');
+                    this.pipelineMsg = 'Processing...';
+                    if (this.pipelineStatusTimer) clearInterval(this.pipelineStatusTimer);
+                    this.pipelineStatusTimer = setInterval(() => this.checkPipelineStatus(), 3000);
+                } else {
+                    const d = await resp.json();
+                    this.showToast(d.detail || 'Pipeline failed', 'error');
+                    this.pipelineRunning = false;
+                    this.pipelineState = 'idle';
+                }
+            } catch {
+                this.showToast('Network error', 'error');
+                this.pipelineRunning = false;
+                this.pipelineState = 'idle';
+            }
+        },
+
+        renderQualityChart() {
+            setTimeout(() => {
+                const canvas = document.getElementById('qualityTrendChart');
+                if (!canvas) return;
+                if (typeof Chart === 'undefined') {
+                    const script = document.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js';
+                    script.onload = () => this._drawChart(canvas);
+                    document.head.appendChild(script);
+                } else {
+                    this._drawChart(canvas);
+                }
+            }, 100);
+        },
+
+        _drawChart(canvas) {
+            if (this._qualityChart) this._qualityChart.destroy();
+            this._qualityChart = new Chart(canvas, {
+                type: 'line',
+                data: {
+                    labels: this.quality.trendLabels,
+                    datasets: [{
+                        label: 'Avg Quality Score',
+                        data: this.quality.trendData,
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99,102,241,0.1)',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 3,
+                        pointBackgroundColor: '#6366f1',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#94a3b8' } } },
+                    scales: {
+                        x: { ticks: { color: '#64748b' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        y: { min: 0, max: 1, ticks: { color: '#64748b', callback: v => (v * 100).toFixed(0) + '%' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                    }
+                }
+            });
+        },
+
+        async viewPatternMessages(pattern) {
+            this.showPatternModal = true;
+            this.patternLoading = true;
+            this.patternDetail = null;
+            try {
+                const resp = await fetch(`/api/admin/quality/failure-patterns/${pattern.id}/messages`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+                });
+                if (resp.ok) this.patternDetail = await resp.json();
+            } catch { /* ignore */ } finally {
+                this.patternLoading = false;
+            }
+        },
+
+        showToast(message, type = 'success') {
+            this.toast = { show: true, message, type };
+            setTimeout(() => { this.toast.show = false; }, 3000);
+        }
+        ,
+        sendTestMessage() {
+            const tenantId = document.getElementById('adminTestTenantId').value.trim();
+            const apiKey = document.getElementById('adminTestApiKey').value.trim();
+            const message = document.getElementById('adminTestMessage').value.trim();
+            const resultBox = document.getElementById('adminTestResult');
+            resultBox.textContent = '';
+            if (!tenantId || !apiKey || !message) {
+                resultBox.textContent = 'All fields are required.';
+                resultBox.style.color = 'red';
+                return;
+            }
+            resultBox.textContent = 'Sending...';
+            resultBox.style.color = '#a5b4fc';
+            fetch(`/api/chat/message/${tenantId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': apiKey
+                },
+                body: JSON.stringify({ content: message, user_id: 'admin-tester' })
+            })
+            .then(async resp => {
+                let data;
+                try {
+                    data = await resp.json();
+                } catch (e) {
+                    data = null;
+                }
+                return { ok: resp.ok, data, status: resp.status, statusText: resp.statusText, resp };
+            })
+            .then(({ ok, data, status, statusText, resp }) => {
+                if (ok && data && data.content) {
+                    resultBox.innerHTML = `<strong>Assistant:</strong> ${data.content}`;
+                    resultBox.style.color = '#059669';
+                } else {
+                    let errorMsg = (data && data.detail) ? data.detail : '';
+                    if (!errorMsg) {
+                        // Try to get raw text if not JSON
+                        resp.text().then(txt => {
+                            resultBox.textContent = `Error: HTTP ${status} ${statusText}\n${txt}`;
+                            resultBox.style.color = 'red';
+                        });
+                        return;
+                    }
+                    resultBox.textContent = `Error: HTTP ${status} ${statusText}\n${errorMsg}`;
+                    resultBox.style.color = 'red';
+                }
+            })
+            .catch((err) => {
+                resultBox.textContent = 'Network or server error.';
+                resultBox.style.color = 'red';
+            });
+        }
+    };
+}
+</script>
+
+    <!-- Tenant Detail Modal -->
+    <div x-cloak x-show="showTenantDetailModal"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+         @click.self="showTenantDetailModal = false">
+
+        <div class="bg-gray-900 border border-white/10 w-full max-w-6xl h-[90vh] flex flex-col shadow-2xl"
+             @click="$event.stopPropagation();">
+
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between p-5 border-b border-white/10 flex-shrink-0">
+                <div>
+                    <h3 class="text-lg font-semibold" x-text="editingTenant.name || 'Tenant Details'"></h3>
+                    <p class="text-xs text-gray-400 mt-1" x-text="editingTenant.slug"></p>
+                </div>
+                <button @click="$event.stopPropagation(); showTenantDetailModal = false"
+                        class="text-gray-400 hover:text-white text-xl leading-none">&times;</button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="flex flex-col flex-1 overflow-hidden">
+
+                <!-- Tab bar - Professional horizontal tabs -->
+                <div class="flex-shrink-0 bg-gray-800/50 border-b border-white/10">
+                    <nav class="flex gap-1 px-4 overflow-x-auto">
+                        <button @click="detailTab = 'basic'" 
+                                :class="detailTab === 'basic' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-gray-400 hover:text-gray-200'"
+                                class="px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap">
+                            📋 Basic
+                        </button>
+                        <button @click="detailTab = 'subscription'" 
+                                :class="detailTab === 'subscription' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-gray-400 hover:text-gray-200'"
+                                class="px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap">
+                            💳 Subscription
+                        </button>
+                        <button @click="detailTab = 'ai'" 
+                                :class="detailTab === 'ai' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-gray-400 hover:text-gray-200'"
+                                class="px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap">
+                            🤖 AI Config
+                        </button>
+                        <button @click="detailTab = 'knowledge'" 
+                                :class="detailTab === 'knowledge' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-gray-400 hover:text-gray-200'"
+                                class="px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap">
+                            📚 Knowledge
+                        </button>
+                        <button @click="detailTab = 'progress'" 
+                                :class="detailTab === 'progress' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-gray-400 hover:text-gray-200'"
+                                class="px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap">
+                            📊 Progress
+                        </button>
+                        <button @click="detailTab = 'integrations'" 
+                                :class="detailTab === 'integrations' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-gray-400 hover:text-gray-200'"
+                                class="px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap">
+                            🔌 Integrations
+                        </button>
+                        <button @click="detailTab = 'widget'" 
+                                :class="detailTab === 'widget' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-gray-400 hover:text-gray-200'"
+                                class="px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap">
+                            📋 Widget
+                        </button>
+                        <button @click="detailTab = 'testchat'"
+                                :class="detailTab === 'testchat' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-gray-400 hover:text-gray-200'"
+                                class="px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap">
+                            🧪 Test Chatbot
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- Tab panels - use display toggles -->
+                <div class="flex-1 overflow-y-auto p-6">
+
+                    <!-- ===== TEST CHATBOT TAB ===== -->
+                    <div x-show="detailTab === 'testchat'" class="space-y-4">
+                        <h3 class="text-lg font-semibold text-indigo-400 border-b border-white/10 pb-2 mb-4">🧪 Test Chatbot API (Safe)</h3>
+                        <form id="adminChatbotTestForm" class="flex flex-col gap-3" @submit.prevent="sendTestMessage()">
+                            <div class="flex gap-2 flex-col md:flex-row">
+                                <input id="adminTestTenantId" type="text" class="input-field w-full px-3 py-2" :value="editingTenant.id || ''" readonly placeholder="Tenant ID (auto)" required>
+                                <input id="adminTestApiKey" type="text" class="input-field w-full px-3 py-2" :value="editingTenant._widgetApiKey || ''" readonly placeholder="API Key (auto)" required>
+                            </div>
+                            <input id="adminTestMessage" type="text" class="input-field w-full px-3 py-2" placeholder="Type a message (e.g., Hello)" required>
+                            <button type="submit" class="btn-primary px-4 py-2 rounded text-white font-semibold">Send Test Message</button>
+                        </form>
+                        <div id="adminTestResult" class="mt-3 text-sm"></div>
+                    </div>
+
+                    <!-- ===== BASIC INFO ===== -->
+                    <div x-show="detailTab === 'basic'" class="space-y-4">
+                        <h3 class="text-lg font-semibold text-indigo-400 border-b border-white/10 pb-2 mb-4">📋 Basic Information</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Name</label>
+                                <input type="text" x-model="editingTenant.name" class="input-field w-full px-3 py-2 text-sm text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Slug</label>
+                                <input type="text" :value="editingTenant.slug" readonly class="input-field w-full px-3 py-2 text-sm text-white opacity-60">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Domain</label>
+                                <input type="text" x-model="editingTenant.domain" class="input-field w-full px-3 py-2 text-sm text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Website URL</label>
+                                <input type="text" x-model="editingTenant.website_url" class="input-field w-full px-3 py-2 text-sm text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Login Email <span class="text-indigo-400 text-[10px]">(used for tenant login)</span></label>
+                                <input type="text" :value="editingTenant.login_email" readonly class="input-field w-full px-3 py-2 text-sm text-white opacity-60">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Contact Email <span class="text-gray-500 text-[10px]">(general contact)</span></label>
+                                <input type="text" x-model="editingTenant.contact_email" class="input-field w-full px-3 py-2 text-sm text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Daily Report Email <span class="text-green-400 text-[10px]">(6 AM lead alerts)</span></label>
+                                <input type="text" x-model="editingTenant.daily_report_email" class="input-field w-full px-3 py-2 text-sm text-white" placeholder="Same as login email if blank">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Business Hours</label>
+                                <input type="text" x-model="editingTenant.business_hours" class="input-field w-full px-3 py-2 text-sm text-white" placeholder="e.g. Mon–Sat 9AM–6PM">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Registered On</label>
+                                <input type="text" :value="editingTenant.created_at ? new Date(editingTenant.created_at).toLocaleDateString('en-SG', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'" readonly class="input-field w-full px-3 py-2 text-sm text-white opacity-60">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Registration Source</label>
+                                <input type="text" :value="editingTenant.registration_source === 'admin' ? 'Admin Created' : 'Self-Service'" readonly class="input-field w-full px-3 py-2 text-sm text-white opacity-60">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Last Login</label>
+                                <input type="text" :value="editingTenant.login_last_login_at ? new Date(editingTenant.login_last_login_at).toLocaleString() : 'Never'" readonly class="input-field w-full px-3 py-2 text-sm text-white opacity-60">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Industry</label>
+                                <select x-model="editingTenant.industry" class="input-field w-full px-3 py-2 text-sm text-white">
+                                    <option value="">Select…</option>
+                                    <option value="services">Services</option>
+                                    <option value="food">Food & Beverage</option>
+                                    <option value="retail">Retail / E-commerce</option>
+                                    <option value="accounting">Accounting / Finance</option>
+                                    <option value="insurance">Insurance</option>
+                                    <option value="healthcare">Healthcare</option>
+                                    <option value="education">Education</option>
+                                    <option value="technology">Technology</option>
+                                    <option value="non-profit">Non-Profit</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== SUBSCRIPTION ===== -->
+                    <div x-show="detailTab === 'subscription'" class="space-y-4">
+                        <h3 class="text-lg font-semibold text-indigo-400 border-b border-white/10 pb-2 mb-4">💳 Subscription & Billing</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Subscription Tier</label>
+                                <select x-model="editingTenant.subscription_tier" class="input-field w-full px-3 py-2 text-sm text-white">
+                                    <option value="starter">Starter</option>
+                                    <option value="growth">Growth</option>
+                                    <option value="enterprise">Enterprise</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Subscription Status</label>
+                                <input type="text" x-model="editingTenant.subscription_status" class="input-field w-full px-3 py-2 text-sm text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Trial Ends At</label>
+                                <input type="date" x-model="editingTenant.trial_ends_at" class="input-field w-full px-3 py-2 text-sm text-white">
+                            </div>
+                            <div class="flex items-center gap-3 pt-5">
+                                <input type="checkbox" x-model="editingTenant.is_active" class="w-4 h-4 accent-indigo-500 rounded">
+                                <label class="text-sm text-gray-300">Tenant is Active</label>
+                            </div>
+                        </div>
+                        <div class="mt-4 p-3 bg-white/5 rounded">
+                            <h5 class="text-xs font-semibold text-gray-400 mb-2">Plan Features</h5>
+                            <div class="flex flex-wrap gap-2" x-show="editingTenant.subscription_tier">
+                                <template x-for="pkg in subscriptionPacks">
+                                    <span class="px-2 py-1 rounded text-xs"
+                                          :class="pkg.tier === editingTenant.subscription_tier ? 'bg-indigo-500/30 text-indigo-300' : 'bg-white/5 text-gray-500'"
+                                          x-text="pkg.label"></span>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== AI CONFIG ===== -->
+                    <div x-show="detailTab === 'ai'" class="space-y-4">
+                        <h3 class="text-lg font-semibold text-indigo-400 border-b border-white/10 pb-2 mb-4">🤖 AI Model Configuration</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Model Name</label>
+                                <select x-model="editingTenant.model_name" class="input-field w-full px-3 py-2 text-sm text-white">
+                                    <template x-for="m in (editingTenant.allowed_models || [])" :key="m">
+                                        <option :value="m" x-text="m"></option>
+                                    </template>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Temperature</label>
+                                <input type="number" step="0.1" x-model="editingTenant.temperature" class="input-field w-full px-3 py-2 text-sm text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Max Tokens</label>
+                                <input type="number" x-model="editingTenant.max_tokens" class="input-field w-full px-3 py-2 text-sm text-white">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-300 mb-1">Prompt Template</label>
+                            <textarea x-model="editingTenant.prompt_template" rows="5" class="input-field w-full px-3 py-2 text-sm text-white resize-y font-mono text-xs" placeholder="System prompt for this tenant…"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-300 mb-1">Welcome Message</label>
+                            <textarea x-model="editingTenant.welcome_message" rows="2" class="input-field w-full px-3 py-2 text-sm text-white resize-y" placeholder="Hello! How can I help you today?"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- ===== KNOWLEDGE & PROFILE ===== -->
+                    <div x-show="detailTab === 'knowledge'" class="space-y-4">
+                        <h3 class="text-lg font-semibold text-indigo-400 border-b border-white/10 pb-2 mb-4">📚 Knowledge Base & Profile</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Onboarding Stage</label>
+                                <input type="text" x-model="editingTenant.onboarding_stage" class="input-field w-full px-3 py-2 text-sm text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Tone</label>
+                                <select x-model="editingTenant.tone" class="input-field w-full px-3 py-2 text-sm text-white">
+                                    <option value="friendly">Friendly</option>
+                                    <option value="formal">Formal</option>
+                                    <option value="consultative">Consultative</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Compliance Mode</label>
+                                <select x-model="editingTenant.compliance_mode" class="input-field w-full px-3 py-2 text-sm text-white">
+                                    <option value="normal">Normal</option>
+                                    <option value="high-regulation">High-Regulation</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Out of Scope Mode</label>
+                                <select x-model="editingTenant.out_of_scope_mode" class="input-field w-full px-3 py-2 text-sm text-white">
+                                    <option value="strict_business">Strict Business</option>
+                                    <option value="assistive_general">Assistive General</option>
+                                </select>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-medium text-gray-300 mb-1">CTA Goals (JSON)</label>
+                                <textarea x-model="editingTenant.cta_goals" rows="2" class="input-field w-full px-3 py-2 text-sm text-white font-mono resize-y" placeholder='[{"action": "lead", "goal": "name_email"}]'></textarea>
+                            </div>
+                        </div>
+                        <div class="border-t border-white/10 pt-4 mt-4">
+                            <h5 class="text-sm font-semibold text-indigo-400 mb-3">Knowledge Base</h5>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-300 mb-1">Knowledge Context (JSON)</label>
+                                    <textarea x-model="editingTenant.knowledge_context" rows="5" class="input-field w-full px-3 py-2 text-sm text-white font-mono resize-y text-xs"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-300 mb-1">Guardrails (JSON)</label>
+                                    <textarea x-model="editingTenant.guardrails" rows="3" class="input-field w-full px-3 py-2 text-sm text-white font-mono resize-y text-xs"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-300 mb-1">Onboarding Notes</label>
+                                    <textarea x-model="editingTenant.onboarding_notes" rows="3" class="input-field w-full px-3 py-2 text-sm text-white resize-y"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== PROGRESS & REPORTS ===== -->
+                    <div x-show="detailTab === 'progress'" class="space-y-4">
+                        <h3 class="text-lg font-semibold text-indigo-400 border-b border-white/10 pb-2 mb-4">📊 Progress & Reports</h3>
+                        <div>
+                            <h5 class="text-sm font-semibold text-indigo-400 mb-3">Crawl Progress</h5>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-300 mb-1">Progress (%)</label>
+                                    <input type="number" min="0" max="100" x-model="editingTenant.crawl_progress_percent" class="input-field w-full px-3 py-2 text-sm text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-300 mb-1">Stage / Message</label>
+                                    <input type="text" x-model="editingTenant.crawl_progress_stage" class="input-field w-full px-3 py-2 text-sm text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-300 mb-1">Last Updated</label>
+                                    <input type="text" :value="editingTenant.crawl_progress_updated_at ? formatDate(editingTenant.crawl_progress_updated_at) : '-'" readonly class="input-field w-full px-3 py-2 text-sm text-white opacity-60">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="border-t border-white/10 pt-4 mt-2">
+                            <h5 class="text-sm font-semibold text-indigo-400 mb-3">Daily Reports</h5>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-300 mb-1">Daily Report Email</label>
+                                    <input type="text" x-model="editingTenant.daily_report_email" class="input-field w-full px-3 py-2 text-sm text-white">
+                                </div>
+                                <div class="flex items-center gap-3 pt-5">
+                                    <input type="checkbox" x-model="editingTenant.daily_report_enabled" class="w-4 h-4 accent-indigo-500 rounded">
+                                    <label class="text-sm text-gray-300">Daily Report Enabled</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== INTEGRATIONS ===== -->
+                    <div x-show="detailTab === 'integrations'" class="space-y-4">
+                        <h3 class="text-lg font-semibold text-indigo-400 border-b border-white/10 pb-2 mb-4">🔌 External Integrations</h3>
+                        <div>
+                            <h5 class="text-sm font-semibold text-indigo-400 mb-3">E-commerce API</h5>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-300 mb-1">External API URL</label>
+                                    <input type="text" x-model="editingTenant.external_api_url" class="input-field w-full px-3 py-2 text-sm text-white">
+                                </div>
+                                <div class="flex items-center gap-3 pt-5">
+                                    <input type="checkbox" x-model="editingTenant.external_api_enabled" class="w-4 h-4 accent-indigo-500 rounded">
+                                    <label class="text-sm text-gray-300">External API Enabled</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="border-t border-white/10 pt-4 mt-2">
+                            <h5 class="text-sm font-semibold text-indigo-400 mb-3">Multi-Channel</h5>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Enabled Channels (JSON)</label>
+                                <textarea x-model="editingTenant.enabled_channels" rows="3" class="input-field w-full px-3 py-2 text-sm text-white font-mono resize-y text-xs" placeholder='{"chat": true, "whatsapp": false}'></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== WIDGET CODE ===== -->
+                    <div x-show="detailTab === 'widget'" class="space-y-4">
+                        <h3 class="text-lg font-semibold text-indigo-400 border-b border-white/10 pb-2 mb-4">📋 Widget Embed Code</h3>
+                        <div x-show="!editingTenant._widgetCode" class="text-xs text-gray-500 py-4">Loading widget code…</div>
+                        <div x-show="editingTenant._widgetCode" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">API URL</label>
+                                <input type="text" :value="editingTenant._widgetApiUrl || ''" readonly class="input-field w-full px-3 py-2 text-sm text-white opacity-60 font-mono text-xs">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">API Key</label>
+                                <div class="flex gap-2">
+                                    <input type="text" :value="editingTenant._widgetApiKey || ''" readonly class="input-field flex-1 px-3 py-2 text-sm text-white opacity-60 font-mono text-xs">
+                                    <button @click="$event.stopPropagation(); navigator.clipboard.writeText(editingTenant._widgetApiKey || '').then(() => $el.textContent='Copied!').catch(() => $el.textContent='Copy')" class="px-3 py-1.5 bg-white/10 text-xs rounded hover:bg-white/20 text-white flex-shrink-0">Copy</button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Integration Snippet</label>
+                                <textarea :value="editingTenant._widgetCode" readonly rows="10" class="input-field w-full px-3 py-2 text-sm text-white opacity-70 font-mono text-xs resize-y"></textarea>
+                            </div>
+                            <button @click="$event.stopPropagation(); navigator.clipboard.writeText(editingTenant._widgetCode || '').then(() => this.showToast('Snippet copied!')).catch(() => this.showToast('Copy failed','error'))" class="px-3 py-2 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700">📋 Copy Snippet</button>
+                        </div>
+                    </div>
+
+                </div><!-- /tab-panel scroll area -->
+            </div><!-- /modal-body flex -->
+
+            <!-- Modal Footer -->
+            <div class="flex items-center justify-end gap-3 p-5 border-t border-white/10 flex-shrink-0">
+                <button @click="$event.stopPropagation(); showTenantDetailModal = false"
+                        class="px-4 py-2 bg-white/10 rounded-lg text-sm hover:bg-white/20">Cancel</button>
+                <button @click="$event.stopPropagation(); editingTenant.name ? saveTenantDetail() : null"
+                        class="btn-primary px-5 py-2 rounded-lg text-sm font-medium text-white">Save Changes</button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div x-show="showChangePassword" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200]" x-cloak>
+        <div @click.self="showChangePassword = false" class="p-4 w-full max-w-md">
+            <div class="rounded-xl p-6 shadow-xl" :class="theme === 'dark' ? 'bg-gray-900 border border-white/10' : 'bg-white border border-gray-200'">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-semibold" :class="theme === 'dark' ? 'text-white' : 'text-gray-900'">Change Password</h3>
+                    <button @click="showChangePassword = false" class="text-2xl leading-none" :class="theme === 'dark' ? 'text-gray-400 hover:text-white' : 'text-gray-400 hover:text-gray-600'">&times;</button>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1.5" :class="theme === 'dark' ? 'text-gray-300' : 'text-gray-700'">Current Password</label>
+                        <input type="password" x-model="pwdForm.current" class="input-field w-full px-4 py-2.5 text-sm rounded-lg" :class="theme === 'dark' ? 'text-white' : 'text-gray-900'">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1.5" :class="theme === 'dark' ? 'text-gray-300' : 'text-gray-700'">New Password</label>
+                        <input type="password" x-model="pwdForm.newPwd" class="input-field w-full px-4 py-2.5 text-sm rounded-lg" :class="theme === 'dark' ? 'text-white' : 'text-gray-900'">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1.5" :class="theme === 'dark' ? 'text-gray-300' : 'text-gray-700'">Confirm New Password</label>
+                        <input type="password" x-model="pwdForm.confirm" @keyup.enter="changePassword()" class="input-field w-full px-4 py-2.5 text-sm rounded-lg" :class="theme === 'dark' ? 'text-white' : 'text-gray-900'">
+                    </div>
+                    <div x-show="pwdError" class="p-3 rounded-lg text-sm" :class="theme === 'dark' ? 'bg-red-500/10 border border-red-500/20 text-red-400' : 'bg-red-50 border border-red-200 text-red-600'" x-text="pwdError"></div>
+                    <button @click="changePassword()" :disabled="pwdLoading" class="w-full btn-primary py-2.5 rounded-lg text-sm font-semibold text-white flex items-center justify-center gap-2">
+                        <div x-show="pwdLoading" class="spinner"></div>
+                        <span x-text="pwdLoading ? 'Updating...' : 'Update Password'"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

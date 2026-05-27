@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Widget Preview Test</title>
+  <style>body { background: #1e293b; margin: 0; padding: 20px; }</style>
+</head>
+<body>
+  <h2 style="color:white">Widget Local Test (bypasses Cloudflare)</h2>
+  <script src="http://localhost:8001/static/widget.js"></script>
+  <script>
+    LLMChatbot.init({
+      apiUrl: 'http://localhost:8001',
+      tenantId: 'fb8a4ec0-e463-4678-8178-32b8332db73a',
+      theme: { primaryColor: '#3b5cde' }
+    });
+    // Auto-open after 500ms for easy preview
+    setTimeout(() => {
+      const btn = document.getElementById('llm-toggle-btn');
+      if (btn) btn.click();
+    }, 500);
+  </script>
+</body>
+</html>

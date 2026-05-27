@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Chatbot Onboarding — Checklist</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f8fafc; color: #1e293b; }
+  .page { max-width: 780px; margin: 32px auto; background: #fff; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); overflow: hidden; }
+
+  /* Header */
+  .header { background: linear-gradient(135deg, #1e40af 0%, #7c3aed 100%); color: #fff; padding: 28px 36px; }
+  .header h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .header p { font-size: 13px; opacity: 0.85; }
+  .header .badge { display: inline-block; background: rgba(255,255,255,0.2); border-radius: 20px; padding: 3px 12px; font-size: 11px; margin-top: 10px; }
+
+  /* Body */
+  .body { padding: 28px 36px; }
+  .tenant-info { background: #f1f5f9; border-radius: 8px; padding: 12px 16px; margin-bottom: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .tenant-info .field label { font-size: 10px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+  .tenant-info .field span { font-size: 13px; color: #1e293b; font-weight: 500; }
+
+  /* Section */
+  .section { margin-bottom: 24px; }
+  .section-title { font-size: 13px; font-weight: 700; color: #fff; background: #3b82f6; border-radius: 6px; padding: 5px 12px; display: inline-block; margin-bottom: 12px; }
+  .section-title.green { background: #16a34a; }
+  .section-title.purple { background: #7c3aed; }
+  .section-title.orange { background: #ea580c; }
+
+  /* Checklist items */
+  .checklist { list-style: none; }
+  .checklist li { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+  .checklist li:last-child { border-bottom: none; }
+  .checklist li .box { width: 16px; height: 16px; border: 2px solid #94a3b8; border-radius: 3px; flex-shrink: 0; margin-top: 1px; }
+  .checklist li .text { flex: 1; line-height: 1.5; }
+  .checklist li .text strong { color: #1e293b; }
+  .checklist li .text .note { font-size: 11px; color: #64748b; margin-top: 2px; }
+
+  /* Code block */
+  .code-block { background: #0f172a; color: #86efac; border-radius: 8px; padding: 12px 16px; font-size: 11.5px; font-family: 'Courier New', monospace; margin: 8px 0; word-break: break-all; line-height: 1.7; }
+  .code-block .comment { color: #64748b; }
+
+  /* Two columns */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  /* Info box */
+  .info-box { background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 0 6px 6px 0; padding: 10px 14px; font-size: 12px; color: #1e40af; margin: 10px 0; }
+  .info-box.green { background: #f0fdf4; border-color: #16a34a; color: #166534; }
+  .info-box.amber { background: #fffbeb; border-color: #f59e0b; color: #92400e; }
+
+  /* Footer */
+  .footer { background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 14px 36px; display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #64748b; }
+  .footer strong { color: #3b82f6; }
+
+  @media print {
+    body { background: #fff; }
+    .page { box-shadow: none; margin: 0; border-radius: 0; }
+    .print-btn { display: none !important; }
+  }
+  @media (max-width: 600px) {
+    .body { padding: 18px; }
+    .header { padding: 20px 18px; }
+    .two-col { grid-template-columns: 1fr; }
+    .tenant-info { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <!-- Header -->
+  <div class="header">
+    <h1>🤖 AI Chatbot Onboarding Checklist</h1>
+    <p>Everything you need to go live with your AI-powered chatbot and WhatsApp assistant.</p>
+    <span class="badge">Powered by Scube Infotech AI Platform</span>
+  </div>
+
+  <div class="body">
+
+    <!-- Tenant Info Fields -->
+    <div class="tenant-info">
+      <div class="field"><label>Business Name</label><br><span>_______________________________</span></div>
+      <div class="field"><label>Website URL</label><br><span>_______________________________</span></div>
+      <div class="field"><label>Contact Email</label><br><span>_______________________________</span></div>
+      <div class="field"><label>Contact Phone</label><br><span>_______________________________</span></div>
+      <div class="field"><label>Industry</label><br><span>_______________________________</span></div>
+      <div class="field"><label>Go-Live Target Date</label><br><span>_______________________________</span></div>
+    </div>
+
+    <!-- Step 1: Basic Setup -->
+    <div class="section">
+      <span class="section-title">Step 1 — Basic Setup</span>
+      <ul class="checklist">
+        <li><div class="box"></div><div class="text"><strong>Business name & website URL</strong><div class="note">We'll crawl your website daily to keep the AI updated with your latest content.</div></div></li>
+        <li><div class="box"></div><div class="text"><strong>Services / Products list</strong><div class="note">A list of what you offer (text, Word doc, or PDF). The AI will answer questions about these.</div></div></li>
+        <li><div class="box"></div><div class="text"><strong>FAQs or knowledge base</strong><div class="note">Optional but recommended. Upload any existing FAQ documents for more accurate answers.</div></div></li>
+        <li><div class="box"></div><div class="text"><strong>Contact details to share with customers</strong><div class="note">Address, phone, email, business hours. The AI will provide these when asked.</div></div></li>
+        <li><div class="box"></div><div class="text"><strong>Welcome message</strong><div class="note">First message users see when they open the chat. E.g. "Hi! I'm the Acme AI Assistant. How can I help?"</div></div></li>
+      </ul>
+    </div>
+
+    <div class="two-col">
+      <!-- Step 2: Web Chat -->
+      <div class="section">
+        <span class="section-title green">Step 2 — Web Chat Widget</span>
+        <ul class="checklist">
+          <li><div class="box"></div><div class="text"><strong>Add snippet to your website</strong><div class="note">Paste before closing &lt;/body&gt; tag on every page.</div></div></li>
+          <li><div class="box"></div><div class="text"><strong>Test on desktop & mobile</strong></div></li>
+          <li><div class="box"></div><div class="text"><strong>Confirm welcome message shows</strong></div></li>
+          <li><div class="box"></div><div class="text"><strong>Test 3–4 questions</strong><div class="note">Verify AI answers correctly from your knowledge base.</div></div></li>
+        </ul>
+        <div class="code-block">
+<span class="comment">&lt;!-- Paste before &lt;/body&gt; --&gt;</span>
+&lt;script
+  src="https://chat.scubeinfotech.com.sg/widget.js"
+  data-tenant-id="<strong>YOUR_TENANT_ID</strong>"
+  data-api-key="<strong>YOUR_API_KEY</strong>"
+  data-color="#2563eb"&gt;
+&lt;/script&gt;
+        </div>
+      </div>
+
+      <!-- Step 3: WhatsApp -->
+      <div class="section">
+        <span class="section-title purple">Step 3 — WhatsApp (Optional)</span>
+        <ul class="checklist">
+          <li><div class="box"></div><div class="text"><strong>Dedicated WhatsApp Business number</strong><div class="note">A phone number (SIM or virtual) only for this chatbot.</div></div></li>
+          <li><div class="box"></div><div class="text"><strong>Meta Business Account</strong><div class="note">Create at business.facebook.com if not already done.</div></div></li>
+          <li><div class="box"></div><div class="text"><strong>Create WhatsApp App on Meta</strong><div class="note">developers.facebook.com → Create App → WhatsApp Business.</div></div></li>
+          <li><div class="box"></div><div class="text"><strong>Send us 3 values from Meta Console:</strong>
+            <div class="note">① Phone Number ID<br>② Business Account ID<br>③ System User Access Token</div>
+          </div></li>
+          <li><div class="box"></div><div class="text"><strong>Set webhook in Meta Console</strong><div class="note">URL & Verify Token — we'll provide these once configured.</div></div></li>
+          <li><div class="box"></div><div class="text"><strong>Send test message to your number</strong><div class="note">Verify the AI replies automatically.</div></div></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- What we provide -->
+    <div class="section">
+      <span class="section-title orange">What We Provide After Setup</span>
+      <div class="two-col">
+        <div>
+          <ul class="checklist">
+            <li><div class="box"></div><div class="text"><strong>Tenant ID</strong><div class="note">Your unique identifier on the platform.</div></div></li>
+            <li><div class="box"></div><div class="text"><strong>API Key</strong><div class="note">For securing your chat widget.</div></div></li>
+            <li><div class="box"></div><div class="text"><strong>Widget embed code</strong><div class="note">Ready to paste into your website.</div></div></li>
+          </ul>
+        </div>
+        <div>
+          <ul class="checklist">
+            <li><div class="box"></div><div class="text"><strong>Admin dashboard access</strong><div class="note">View conversations, leads, and analytics.</div></div></li>
+            <li><div class="box"></div><div class="text"><strong>WhatsApp webhook URL & verify token</strong><div class="note">For Meta Console configuration.</div></div></li>
+            <li><div class="box"></div><div class="text"><strong>Daily auto-crawl of your website</strong><div class="note">Knowledge base updates every night at 3 AM.</div></div></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="info-box green">
+      ✅ <strong>Go-live time:</strong> Web chat can go live within 2 hours of receiving your details. WhatsApp typically within 24 hours after Meta credentials are shared.
+    </div>
+    <div class="info-box amber">
+      ⚠️ <strong>WhatsApp note:</strong> Meta requires your number to be verified and your app to be in Live mode before real customers can message you. Allow 1–3 business days for Meta approval.
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div>📧 Send completed checklist to: <strong>admin@scubeinfotech.com.sg</strong></div>
+    <button class="print-btn" onclick="window.print()" style="background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer;">🖨️ Print / Save PDF</button>
+    <div>🌐 <strong>chat.scubeinfotech.com.sg</strong></div>
+  </div>
+</div>
+
+</body>
+</html>

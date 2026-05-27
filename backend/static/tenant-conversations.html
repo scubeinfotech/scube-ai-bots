@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tenant Conversations</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { visibility: hidden; }
+    body.loaded { visibility: visible; }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen" onload="document.body.classList.add('loaded')">
+  <div class="bg-white shadow">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Unified Conversations</h1>
+        <p id="tenantLabel" class="text-sm text-gray-500"></p>
+      </div>
+      <div class="flex gap-2">
+        <a id="backBtn" href="/public/dashboard" class="px-3 py-2 rounded bg-gray-600 text-white hover:bg-gray-700">Back to Dashboard</a>
+        <button id="refreshBtn" class="px-3 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">Refresh</button>
+        <button id="logoutBtn" class="px-3 py-2 rounded border border-red-500 text-red-600 hover:bg-red-50">Logout</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-6xl mx-auto p-4">
+    <div id="errorBox" class="hidden mb-4 p-3 rounded border border-red-300 bg-red-50 text-red-700 text-sm"></div>
+
+    <div class="bg-white rounded-lg shadow p-4 mb-4">
+      <div class="flex flex-wrap justify-between items-center mb-4 gap-3">
+        <h2 class="text-lg font-semibold">Web Chat + WhatsApp Threads</h2>
+        <div class="flex items-center gap-3">
+          <label class="text-sm text-gray-600 font-medium">Filter:</label>
+          <select id="channelFilter" class="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:border-blue-400">
+            <option value="all">All Channels</option>
+            <option value="web">Web Chat only</option>
+            <option value="whatsapp">WhatsApp only</option>
+          </select>
+          <span id="totalCount" class="text-sm text-gray-500"></span>
+        </div>
+      </div>
+
+      <div id="conversationsList" class="space-y-3">
+        <p class="text-gray-500 text-center py-8">Loading conversations...</p>
+      </div>
+
+      <div id="pagination" class="flex justify-between items-center mt-4 pt-4 border-t">
+        <button id="prevBtn" class="px-4 py-1.5 rounded border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed text-sm">
+          ← Previous
+        </button>
+        <span id="pageInfo" class="text-sm text-gray-500"></span>
+        <button id="nextBtn" class="px-4 py-1.5 rounded border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed text-sm">
+          Next →
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="conversationModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center p-6 border-b">
+        <div>
+          <h2 class="text-2xl font-bold">Conversation Transcript</h2>
+          <p id="modalThreadMeta" class="text-sm text-gray-600 mt-1"></p>
+        </div>
+        <button id="closeModalBtn" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
+      </div>
+      <div id="conversationMessages" class="p-6 space-y-4"></div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = window.location.origin;
+    let currentTenantId = null;
+    let currentOffset = 0;
+    const PAGE_SIZE = 25;
+    let totalCount = 0;
+    let latestThreads = [];
+
+    function logoutTenant() {
+      localStorage.removeItem('tenantToken');
+      localStorage.removeItem('tenantName');
+      localStorage.removeItem('tenantUsername');
+      window.location.href = '/public/login';
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return 'Unknown';
+      const date = new Date(dateStr);
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      return date.toLocaleDateString(undefined, { timeZone: tz, day: '2-digit', month: 'short', year: 'numeric' })
+        + ' ' + date.toLocaleTimeString(undefined, { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: true });
+    }
+
+    function channelBadge(threadType) {
+      if (threadType === 'whatsapp') {
+        return '<span class="inline-block px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">WhatsApp</span>';
+      }
+      return '<span class="inline-block px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">Web Chat</span>';
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    async function showThread(threadType, threadId) {
+      const token = localStorage.getItem('tenantToken');
+      const modal = document.getElementById('conversationModal');
+      const thread = latestThreads.find(item => item.thread_type === threadType && item.thread_id === threadId);
+      const label = thread?.contact_label || threadId;
+      document.getElementById('modalThreadMeta').textContent = `${label} · ${threadType}`;
+      document.getElementById('conversationMessages').innerHTML = '<div class="text-center py-6 text-gray-600">Loading transcript...</div>';
+      modal.classList.remove('hidden');
+
+      try {
+        const resp = await fetch(`${API_BASE}/api/admin/tenant-portal/conversations/${threadType}/${threadId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.detail || `HTTP ${resp.status}`);
+
+        const html = (data.messages || []).map(msg => {
+          const time = formatDate(msg.created_at);
+          const bubbleClass = msg.role === 'user'
+            ? 'bg-blue-100 text-blue-900 ml-auto'
+            : 'bg-gray-100 text-gray-900 mr-auto';
+          const meta = [msg.channel === 'whatsapp' ? 'WhatsApp' : 'Web Chat', msg.direction || null, msg.delivery_status || null]
+            .filter(Boolean)
+            .join(' · ');
+          return `
+            <div class="flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}">
+              <div class="${bubbleClass} rounded-lg p-4 max-w-[82%]">
+                <div class="text-xs font-semibold mb-1">${msg.role === 'user' ? 'Customer' : 'Assistant'}</div>
+                <div class="text-sm whitespace-pre-wrap">${escapeHtml(msg.content)}</div>
+                <div class="text-xs text-gray-500 mt-2">${escapeHtml(meta)} · ${escapeHtml(time)}</div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        document.getElementById('conversationMessages').innerHTML = html || '<div class="text-center py-6 text-gray-500">No messages found.</div>';
+      } catch (err) {
+        document.getElementById('conversationMessages').innerHTML = `<div class="text-center py-6 text-red-600">${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    function closeConversationModal() {
+      document.getElementById('conversationModal').classList.add('hidden');
+    }
+
+    // Render conversations from API response
+    function renderConversations(conversations) {
+      latestThreads = conversations;
+      const listEl = document.getElementById('conversationsList');
+
+      if (conversations.length === 0) {
+        listEl.innerHTML = '<p class="text-gray-500 text-center py-8">No conversations found.</p>';
+        return;
+      }
+
+      listEl.innerHTML = conversations.map((conv, idx) => {
+        const rowNum = currentOffset + idx + 1;
+        return `
+          <div class="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer" onclick="showThread('${conv.thread_type}','${conv.thread_id}')">
+            <div class="flex justify-between items-start gap-3">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="text-xs text-gray-400 font-mono">#${rowNum}</span>
+                  ${channelBadge(conv.thread_type)}
+                  <div class="text-sm font-semibold text-gray-900">${escapeHtml(conv.contact_label || conv.thread_id.slice(0, 8))}</div>
+                </div>
+                <div class="text-xs text-gray-500 mt-1">Started: ${formatDate(conv.created_at)}</div>
+                <div class="text-xs text-gray-500">Last active: ${formatDate(conv.last_message_at || conv.updated_at)}</div>
+                ${conv.preview ? `<div class="text-sm text-gray-600 mt-1.5 truncate italic">"${escapeHtml(conv.preview)}"</div>` : ''}
+              </div>
+              <div class="text-right flex-shrink-0">
+                <div class="text-xs font-semibold text-gray-700">${conv.message_count} msgs</div>
+                <div class="text-xs text-blue-600 mt-1">View →</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Fetch exactly 25 from server with channel filter
+    async function loadConversations() {
+      const token = localStorage.getItem('tenantToken');
+      const tenantName = localStorage.getItem('tenantName') || 'Tenant';
+      const username = localStorage.getItem('tenantUsername') || '';
+      document.getElementById('tenantLabel').textContent = `${tenantName} (${username})`;
+
+      if (!token) { logoutTenant(); return; }
+
+      const urlParams = new URLSearchParams(window.location.search);
+      currentTenantId = urlParams.get('tenant') || localStorage.getItem('tenantId');
+
+      if (!currentTenantId) {
+        try {
+          const statsResp = await fetch(`${API_BASE}/api/admin/tenant-portal/stats`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const statsData = await statsResp.json();
+          currentTenantId = statsData.tenant?.id;
+          localStorage.setItem('tenantId', currentTenantId);
+        } catch (err) { console.error('Error getting tenant ID:', err); }
+      }
+
+      const errorBox = document.getElementById('errorBox');
+      errorBox.classList.add('hidden');
+      document.getElementById('conversationsList').innerHTML = '<p class="text-gray-400 text-center py-8">Loading...</p>';
+
+      const channel = document.getElementById('channelFilter').value;
+
+      try {
+        const resp = await fetch(
+          `${API_BASE}/api/admin/tenant-portal/conversations?limit=${PAGE_SIZE}&offset=${currentOffset}&channel=${channel}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (!resp.ok) {
+          const errData = await resp.json();
+          throw new Error(errData.detail || `HTTP ${resp.status}`);
+        }
+        const data = await resp.json();
+        totalCount = data.total;
+        renderConversations(data.conversations || []);
+
+        // Pagination info
+        const currentPage = Math.floor(currentOffset / PAGE_SIZE) + 1;
+        const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+        const channelLabel = channel === 'all' ? 'threads' : (channel === 'web' ? 'web chats' : 'WhatsApp threads');
+        document.getElementById('totalCount').textContent = `${totalCount} ${channelLabel}`;
+        document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages}`;
+        document.getElementById('prevBtn').disabled = currentOffset === 0;
+        document.getElementById('nextBtn').disabled = currentOffset + PAGE_SIZE >= totalCount;
+        window.scrollTo(0, 0);
+
+      } catch (err) {
+        if (String(err.message).toLowerCase().includes('401')) { logoutTenant(); return; }
+        errorBox.textContent = err.message;
+        errorBox.classList.remove('hidden');
+      }
+    }
+
+    document.getElementById('logoutBtn').addEventListener('click', logoutTenant);
+    document.getElementById('refreshBtn').addEventListener('click', () => { currentOffset = 0; loadConversations(); });
+    document.getElementById('closeModalBtn').addEventListener('click', closeConversationModal);
+
+    // Filter change → reset to page 1 and reload
+    document.getElementById('channelFilter').addEventListener('change', () => {
+      currentOffset = 0;
+      loadConversations();
+    });
+
+    document.getElementById('prevBtn').addEventListener('click', () => {
+      if (currentOffset > 0) {
+        currentOffset = Math.max(0, currentOffset - PAGE_SIZE);
+        loadConversations();
+      }
+    });
+
+    document.getElementById('nextBtn').addEventListener('click', () => {
+      if (currentOffset + PAGE_SIZE < totalCount) {
+        currentOffset += PAGE_SIZE;
+        loadConversations();
+      }
+    });
+
+    document.getElementById('conversationModal').addEventListener('click', (event) => {
+      if (event.target.id === 'conversationModal') closeConversationModal();
+    });
+
+    loadConversations();
+  </script>
+</body>
+</html>

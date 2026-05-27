@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tenant Selection Test</title>
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f9fafb;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-section {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1f2937;
+            margin-bottom: 24px;
+        }
+        h2 {
+            color: #374151;
+            margin-top: 0;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #1f2937;
+        }
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+        .selected-display {
+            margin-top: 16px;
+            padding: 16px;
+            background: #eff6ff;
+            border: 1px solid #dbeafe;
+            border-radius: 6px;
+        }
+        .selected-display strong {
+            color: #1e40af;
+            font-size: 18px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        .status-active {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .status-inactive {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        th {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #6b7280;
+        }
+        tr:hover {
+            background: #f9fafb;
+        }
+        tr.selected {
+            background: #eff6ff;
+            border-left: 3px solid #3b82f6;
+        }
+        .highlight {
+            background: #eff6ff !important;
+            border-left: 3px solid #3b82f6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏢 Tenant Selection Test</h1>
+        <p>Test the enhanced tenant selection feature with auto-population of all 4 boxes.</p>
+
+        <!-- Tenant List Table -->
+        <div class="test-section">
+            <h2>📋 Tenant List</h2>
+            <table id="tenantTable">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Domain</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr data-tenant-id="nutech">
+                        <td><strong>Nutech</strong><br><small style="color: #6b7280;">nutech</small></td>
+                        <td>nutech.com</td>
+                        <td><span class="status-badge status-active">ACTIVE</span></td>
+                        <td>
+                            <button class="btn btn-primary" onclick="selectTenant('nutech', 'Nutech', 'active')">Select</button>
+                        </td>
+                    </tr>
+                    <tr data-tenant-id="scube">
+                        <td><strong>Scube Infotech</strong><br><small style="color: #6b7280;">scube</small></td>
+                        <td>scube.com</td>
+                        <td><span class="status-badge status-active">ACTIVE</span></td>
+                        <td>
+                            <button class="btn btn-primary" onclick="selectTenant('scube', 'Scube Infotech', 'active')">Select</button>
+                        </td>
+                    </tr>
+                    <tr data-tenant-id="rapas">
+                        <td><strong>Rapas Engineering</strong><br><small style="color: #6b7280;">rapas</small></td>
+                        <td>rapas.com.sg</td>
+                        <td><span class="status-badge status-active">ACTIVE</span></td>
+                        <td>
+                            <button class="btn btn-primary" onclick="selectTenant('rapas', 'Rapas Engineering', 'active')">Select</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Selected Tenant Display -->
+        <div class="test-section">
+            <h2>✅ Selected Tenant</h2>
+            <div id="selectedTenantDisplay" class="selected-display" style="display: none;">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- All 4 Tenant Selection Boxes -->
+        <div class="test-section">
+            <h2>📦 All 4 Tenant Selection Boxes (Auto-Populated)</h2>
+            
+            <div class="grid">
+                <!-- Box 1: Tenant Login User -->
+                <div>
+                    <label>👤 Tenant Login User - Tenant ID</label>
+                    <input type="text" id="tenantUserTenantId" placeholder="Will be auto-populated" readonly style="background: #f9fafb;">
+                </div>
+
+                <!-- Box 2: Daily Report Settings -->
+                <div>
+                    <label>📧 Daily Report Settings - Select Tenant</label>
+                    <select id="dailyReportTenantId">
+                        <option value="">-- Select a Tenant --</option>
+                    </select>
+                </div>
+
+                <!-- Box 3: Website Widget Code -->
+                <div>
+                    <label>🧩 Website Widget Code - Tenant ID</label>
+                    <input type="text" id="widgetTenantId" placeholder="Will be auto-populated" readonly style="background: #f9fafb;">
+                </div>
+
+                <!-- Box 4: Documents -->
+                <div>
+                    <label>📄 Documents - Select Tenant</label>
+                    <select id="docTenantId">
+                        <option value="">-- Select a Tenant --</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Additional Fields -->
+            <div class="grid" style="margin-top: 16px;">
+                <div>
+                    <label>🔧 Widget API URL</label>
+                    <input type="text" id="widgetApiUrl" placeholder="Will be auto-filled if empty">
+                </div>
+                <div>
+                    <label>📋 Daily Report Email</label>
+                    <input type="email" id="dailyReportEmail" placeholder="Email for daily reports">
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="test-section">
+            <h2>⚡ Quick Actions</h2>
+            <button class="btn btn-secondary" onclick="clearAll()">Clear All Fields</button>
+            <button class="btn btn-secondary" onclick="testNutech()">Test: Select NUTECH</button>
+            <button class="btn btn-secondary" onclick="testScube()">Test: Select SCUBE</button>
+            <button class="btn btn-secondary" onclick="testRapas()">Test: Select RAPAS</button>
+        </div>
+    </div>
+
+    <script>
+        // Simulate the enhanced prefillTenantOps function
+        function selectTenant(tenantId, tenantName, status) {
+            console.log('Selecting tenant:', tenantId, tenantName, status);
+
+            // 1. Populate all 4 tenant selection boxes
+            document.getElementById('tenantUserTenantId').value = tenantId;
+            document.getElementById('widgetTenantId').value = tenantId;
+            
+            // Populate dropdowns
+            populateDropdown('dailyReportTenantId', tenantId);
+            populateDropdown('docTenantId', tenantId);
+
+            // 2. Auto-fill API URL if empty
+            const apiUrlInput = document.getElementById('widgetApiUrl');
+            if (apiUrlInput && !apiUrlInput.value) {
+                apiUrlInput.value = window.location.origin;
+            }
+
+            // 3. Highlight selected row
+            highlightSelectedRow(tenantId);
+
+            // 4. Show selected tenant name in bold
+            showSelectedTenantName(tenantId, tenantName, status);
+
+            console.log('All 4 boxes populated for tenant:', tenantId.toUpperCase());
+        }
+
+        function populateDropdown(selectId, tenantId) {
+            const select = document.getElementById(selectId);
+            if (select) {
+                // Check if option exists
+                let optionExists = false;
+                for (let i = 0; i < select.options.length; i++) {
+                    if (select.options[i].value === tenantId) {
+                        optionExists = true;
+                        break;
+                    }
+                }
+                // Add if not exists
+                if (!optionExists) {
+                    const option = document.createElement('option');
+                    option.value = tenantId;
+                    option.textContent = tenantId;
+                    select.appendChild(option);
+                }
+                select.value = tenantId;
+            }
+        }
+
+        function highlightSelectedRow(tenantId) {
+            // Remove previous highlights
+            document.querySelectorAll('#tenantTable tr').forEach(row => {
+                row.classList.remove('highlight');
+            });
+            
+            // Highlight selected row
+            const selectedRow = document.querySelector(`#tenantTable tr[data-tenant-id="${tenantId}"]`);
+            if (selectedRow) {
+                selectedRow.classList.add('highlight');
+            }
+        }
+
+        function showSelectedTenantName(tenantId, tenantName, status) {
+            const displayArea = document.getElementById('selectedTenantDisplay');
+            if (displayArea) {
+                displayArea.style.display = 'block';
+                const statusBadge = status === 'active' 
+                    ? '<span class="status-badge status-active">ACTIVE</span>'
+                    : '<span class="status-badge status-inactive">INACTIVE</span>';
+                
+                displayArea.innerHTML = `
+                    <div class="flex items-center gap-2 mb-2">
+                        <strong style="color: #1e40af; font-size: 18px;">${tenantId.toUpperCase()}</strong>
+                        <span style="color: #6b7280; font-size: 14px;">(${tenantName})</span>
+                        ${statusBadge}
+                    </div>
+                    <div style="color: #4b5563; font-size: 14px;">
+                        All 4 tenant selection boxes are now configured for <strong>${tenantId.toUpperCase()}</strong>. 
+                        Any changes made to the fields below will apply to this tenant.
+                    </div>
+                `;
+            }
+        }
+
+        function clearAll() {
+            document.getElementById('tenantUserTenantId').value = '';
+            document.getElementById('widgetTenantId').value = '';
+            document.getElementById('dailyReportTenantId').value = '';
+            document.getElementById('docTenantId').value = '';
+            document.getElementById('widgetApiUrl').value = '';
+            document.getElementById('dailyReportEmail').value = '';
+            document.getElementById('selectedTenantDisplay').style.display = 'none';
+            
+            // Remove highlights
+            document.querySelectorAll('#tenantTable tr').forEach(row => {
+                row.classList.remove('highlight');
+            });
+            
+            console.log('All fields cleared');
+        }
+
+        // Quick test functions
+        function testNutech() {
+            selectTenant('nutech', 'Nutech', 'active');
+        }
+
+        function testScube() {
+            selectTenant('scube', 'Scube Infotech', 'active');
+        }
+
+        function testRapas() {
+            selectTenant('rapas', 'Rapas Engineering', 'active');
+        }
+
+        // Initialize
+        console.log('Tenant Selection Test Page Loaded');
+        console.log('Click "Select" on any tenant to test the auto-population feature');
+    </script>
+</body>
+</html>

@@ -1,0 +1,281 @@
+"""
+Analytics service for dashboard metrics
+"""
+from sqlalchemy.orm import Session
+from sqlalchemy import func
+from app.models import ChatMessage, ChatSession, Tenant, UnansweredQuery
+from datetime import datetime, timedelta
+from typing import Dict, List, Any
+
+
+class AnalyticsService:
+    @staticmethod
+    def get_feedback_quality_stats(db: Session, tenant_id: str = None) -> dict:
+        """Aggregate feedback and compute quality % for a tenant or all tenants."""
+        try:
+            from app.models import ChatMessage, Tenant
+            query = db.query(ChatMessage).filter(ChatMessage.role == "assistant")
+            if tenant_id:
+                query = query.filter(ChatMessage.tenant_id == tenant_id)
+            total_feedback = query.filter(ChatMessage.feedback_score.isnot(None)).count()
+            positive_feedback = query.filter(ChatMessage.feedback_score == 1).count()
+            negative_feedback = query.filter(ChatMessage.feedback_score == -1).count()
+            quality_percent = (positive_feedback / total_feedback * 100) if total_feedback > 0 else None
+            return {
+                "tenant_id": tenant_id,
+                "total_feedback": total_feedback,
+                "positive_feedback": positive_feedback,
+                "negative_feedback": negative_feedback,
+                "quality_percent": round(quality_percent, 1) if quality_percent is not None else None
+            }
+        except Exception as e:
+            # Return safe default on error
+            return {
+                "tenant_id": tenant_id,
+                "total_feedback": 0,
+                "positive_feedback": 0,
+                "negative_feedback": 0,
+                "quality_percent": None,
+                "error": str(e)
+            }
+
+    @staticmethod
+    def get_flagged_low_quality_responses(db: Session, tenant_id: str = None, threshold: float = 50.0, min_feedback: int = 3) -> list:
+        """Return assistant messages with low quality (negative feedback ratio above threshold)."""
+        try:
+            from app.models import ChatMessage
+            # Find messages with enough feedback and low quality
+            query = db.query(ChatMessage).filter(ChatMessage.role == "assistant")
+            if tenant_id:
+                query = query.filter(ChatMessage.tenant_id == tenant_id)
+            # Only consider messages with at least min_feedback
+            messages = query.filter(ChatMessage.feedback_score.isnot(None)).all()
+            flagged = []
+            for msg in messages:
+                # For each message, count feedbacks (should be 1 per message in current schema)
+                if msg.feedback_score == -1:
+                    flagged.append({
+                        "id": msg.id,
+                        "content": msg.content,
+                        "feedback_score": msg.feedback_score,
+                        "feedback_comment": msg.feedback_comment,
+                        "created_at": msg.created_at.isoformat() if msg.created_at else None,
+                        "session_id": msg.session_id,
+                        "tenant_id": msg.tenant_id
+                    })
+            return flagged
+        except Exception as e:
+            # Return empty list on error
+            return []
+
+    @staticmethod
+    def get_tenant_stats(db: Session, tenant_id: str) -> Dict[str, Any]:
+        """Get statistics for a specific tenant"""
+        # Total sessions
+        total_sessions = db.query(func.count(ChatSession.id)).filter(
+            ChatSession.tenant_id == tenant_id
+        ).scalar() or 0
+        
+        # Total messages
+        total_messages = db.query(func.count(ChatMessage.id)).filter(
+            ChatMessage.tenant_id == tenant_id
+        ).scalar() or 0
+        
+        # Engagement rate (sessions with multiple messages)
+        engaged_sessions = db.query(func.count(ChatSession.id)).filter(
+            ChatSession.tenant_id == tenant_id
+        ).having(
+            func.count(ChatMessage.id) > 2
+        ).group_by(ChatSession.id).scalar() or 0
+        
+        engagement_rate = (engaged_sessions / total_sessions * 100) if total_sessions > 0 else 0
+        
+        # Unanswered query count
+        unanswered_count = db.query(func.count(UnansweredQuery.id)).filter(
+            UnansweredQuery.tenant_id == tenant_id,
+            UnansweredQuery.is_resolved == False
+        ).scalar() or 0
+        
+        # Unanswered rate
+        unanswered_rate = (unanswered_count / total_messages * 100) if total_messages > 0 else 0
+        
+        # Avg messages per session
+        avg_messages_per_session = (total_messages / total_sessions) if total_sessions > 0 else 0
+        
+        # CSAT percentage (based on feedback_score: 1 = positive, -1 = negative)
+        total_feedback = db.query(func.count(ChatMessage.id)).filter(
+            ChatMessage.tenant_id == tenant_id,
+            ChatMessage.role == "assistant",
+            ChatMessage.feedback_score.isnot(None)
+        ).scalar() or 0
+        positive_feedback = db.query(func.count(ChatMessage.id)).filter(
+            ChatMessage.tenant_id == tenant_id,
+            ChatMessage.role == "assistant",
+            ChatMessage.feedback_score == 1
+        ).scalar() or 0
+        csat_percent = round((positive_feedback / total_feedback * 100), 1) if total_feedback > 0 else None
+        
+        # Resolution rate percentage (sessions with at least one positive feedback)
+        resolved_sessions_count = db.query(func.count(func.distinct(ChatSession.id))).filter(
+            ChatSession.tenant_id == tenant_id
+        ).join(
+            ChatMessage, ChatMessage.session_id == ChatSession.id
+        ).filter(
+            ChatMessage.role == "assistant",
+            ChatMessage.feedback_score == 1
+        ).scalar() or 0
+        resolution_rate_percent = round((resolved_sessions_count / total_sessions * 100), 1) if total_sessions > 0 else None
+        
+        # Average response latency (ms)
+        avg_latency = db.query(func.avg(ChatMessage.latency_ms)).filter(
+            ChatMessage.tenant_id == tenant_id,
+            ChatMessage.role == "assistant",
+            ChatMessage.latency_ms.isnot(None)
+        ).scalar()
+        avg_latency_ms = round(avg_latency, 1) if avg_latency is not None else None
+        
+        return {
+            "tenant_id": tenant_id,
+            "total_sessions": total_sessions,
+            "total_messages": total_messages,
+            "engagement_rate": round(engagement_rate, 1),
+            "unanswered_count": unanswered_count,
+            "unanswered_rate": round(unanswered_rate, 1),
+            "avg_messages_per_session": round(avg_messages_per_session, 1),
+            "conversion_rate": 0.0,  # TODO: Define conversion metric
+            "csat_percent": csat_percent,
+            "resolution_rate_percent": resolution_rate_percent,
+            "avg_latency_ms": avg_latency_ms
+        }
+    
+    @staticmethod
+    def get_all_tenants_stats(db: Session) -> List[Dict[str, Any]]:
+        """Get statistics for all tenants"""
+        tenants = db.query(Tenant).filter(Tenant.is_active == True).all()
+        stats = []
+        
+        for tenant in tenants:
+            tenant_stats = AnalyticsService.get_tenant_stats(db, tenant.id)
+            tenant_stats["tenant_name"] = tenant.name
+            stats.append(tenant_stats)
+        
+        return stats
+    
+    @staticmethod
+    def get_portfolio_summary(db: Session) -> Dict[str, Any]:
+        """Get portfolio-wide summary"""
+        tenants = db.query(Tenant).filter(Tenant.is_active == True).all()
+        all_stats = AnalyticsService.get_all_tenants_stats(db)
+        
+        total_sessions = sum(s["total_sessions"] for s in all_stats)
+        total_messages = sum(s["total_messages"] for s in all_stats)
+        total_unanswered = sum(s["unanswered_count"] for s in all_stats)
+        
+        avg_engagement = sum(s["engagement_rate"] for s in all_stats) / len(all_stats) if all_stats else 0
+        avg_unanswered = (total_unanswered / total_messages * 100) if total_messages > 0 else 0
+        avg_conversion = sum(s["conversion_rate"] for s in all_stats) / len(all_stats) if all_stats else 0
+        
+        # Global CSAT: aggregate all positive feedback across all tenants / total feedback across all tenants
+        # Also global resolution rate: sessions with positive feedback / total sessions across all tenants
+        from sqlalchemy import func as sqlfunc
+        from app.models import ChatMessage, ChatSession
+        
+        # Get total feedback and positive feedback counts across all active tenants
+        tenant_ids = [t.id for t in tenants]
+        if tenant_ids:
+            total_feedback_all = db.query(sqlfunc.count(ChatMessage.id)).filter(
+                ChatMessage.tenant_id.in_(tenant_ids),
+                ChatMessage.role == "assistant",
+                ChatMessage.feedback_score.isnot(None)
+            ).scalar() or 0
+            positive_feedback_all = db.query(sqlfunc.count(ChatMessage.id)).filter(
+                ChatMessage.tenant_id.in_(tenant_ids),
+                ChatMessage.role == "assistant",
+                ChatMessage.feedback_score == 1
+            ).scalar() or 0
+            resolved_sessions_all = db.query(sqlfunc.count(sqlfunc.distinct(ChatSession.id))).filter(
+                ChatSession.tenant_id.in_(tenant_ids)
+            ).join(ChatMessage, ChatMessage.session_id == ChatSession.id).filter(
+                ChatMessage.role == "assistant",
+                ChatMessage.feedback_score == 1
+            ).scalar() or 0
+            
+            avg_csat_percent = round((positive_feedback_all / total_feedback_all * 100), 1) if total_feedback_all > 0 else None
+            avg_resolution_rate_percent = round((resolved_sessions_all / total_sessions * 100), 1) if total_sessions > 0 else None
+        else:
+            avg_csat_percent = None
+            avg_resolution_rate_percent = None
+        
+        # Aggregate per-tenant CSAT/resolution rates (simple average of tenant-level metrics) for summary table
+        csat_vals = [s.get("csat_percent") for s in all_stats if s.get("csat_percent") is not None]
+        res_vals = [s.get("resolution_rate_percent") for s in all_stats if s.get("resolution_rate_percent") is not None]
+        lat_vals = [s.get("avg_latency_ms") for s in all_stats if s.get("avg_latency_ms") is not None]
+        # Note: We keep tenant-level averages for the summary table display
+        
+        return {
+            "total_active_tenants": len(tenants),
+            "total_sessions": total_sessions,
+            "total_messages": total_messages,
+            "total_unanswered_queries": total_unanswered,
+            "avg_engagement_rate": round(avg_engagement, 1),
+            "avg_unanswered_rate": round(avg_unanswered, 1),
+            "avg_conversion_rate": round(avg_conversion, 1),
+            "avg_csat_percent": avg_csat_percent,
+            "avg_resolution_rate_percent": avg_resolution_rate_percent,
+            "tenant_stats": all_stats
+        }
+    
+    @staticmethod
+    def get_conversation_detail(db: Session, session_id: str) -> Dict[str, Any]:
+        """Get detailed conversation view"""
+        session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
+        if not session:
+            return {}
+        
+        messages = db.query(ChatMessage).filter(
+            ChatMessage.session_id == session_id
+        ).order_by(ChatMessage.created_at).all()
+        
+        return {
+            "session_id": session.id,
+            "tenant_id": session.tenant_id,
+            "user_id": session.user_id,
+            "created_at": session.created_at.isoformat(),
+            "message_count": len(messages),
+            "messages": [
+                {
+                    "id": msg.id,
+                    "role": msg.role,
+                    "content": msg.content,
+                    "model_used": msg.model_used,
+                    "latency_ms": msg.latency_ms,
+                    "created_at": msg.created_at.isoformat()
+                }
+                for msg in messages
+            ]
+        }
+    
+    @staticmethod
+    def get_top_unanswered_queries(db: Session, tenant_id: str = None, limit: int = 20) -> List[Dict[str, Any]]:
+        """Get most frequent unanswered queries"""
+        query = db.query(UnansweredQuery).filter(
+            UnansweredQuery.is_resolved == False
+        )
+        
+        if tenant_id:
+            query = query.filter(UnansweredQuery.tenant_id == tenant_id)
+        
+        queries = query.order_by(UnansweredQuery.created_at.desc()).limit(limit).all()
+        
+        return [
+            {
+                "id": q.id,
+                "tenant_id": q.tenant_id,
+                "query": q.query,
+                "confidence_score": q.confidence_score,
+                "reason": q.reason,
+                "created_at": q.created_at.isoformat(),
+                "is_resolved": q.is_resolved
+            }
+            for q in queries
+        ]

@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Platform Analytics Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Load Chart.js asynchronously with fallback
+        (function() {
+            var script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js';
+            script.async = true;
+            script.onerror = function() {
+                var fallback = document.createElement('script');
+                fallback.src = 'https://unpkg.com/chart.js@4.4.0/dist/chart.umd.js';
+                fallback.async = true;
+                document.head.appendChild(fallback);
+            };
+            document.head.appendChild(script);
+        })();
+    </script>
+    <style>
+        body { visibility: hidden; }
+        body.loaded { visibility: visible; }
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .metric-card.success {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+            color: #1a202c;
+        }
+        .metric-card.warning {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: #1a202c;
+        }
+        .metric-card.danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+            color: white;
+        }
+        .metric-value {
+            font-size: 2.25rem;
+            font-weight: bold;
+        }
+        .metric-label {
+            font-size: 0.875rem;
+            opacity: 0.9;
+        }
+        .tenant-row {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .tenant-row:hover {
+            background-color: rgba(102, 126, 234, 0.1);
+            transform: translateX(4px);
+        }
+    </style>
+</head>
+<body class="bg-gray-50" onload="document.body.classList.add('loaded')">
+    <!-- Header -->
+    <div class="bg-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
+                    <p class="text-gray-600 mt-1">Real-time chatbot performance across all customers</p>
+                </div>
+                <div class="flex gap-4">
+                    <select id="dayFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="7">Last 7 days</option>
+                        <option value="14">Last 14 days</option>
+                        <option value="30">Last 30 days</option>
+                        <option value="90">Last 90 days</option>
+                    </select>
+                    <button id="refreshBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                        🔄 Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Loading State -->
+        <div id="loading" class="text-center py-12">
+            <div class="inline-block">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+            <p class="text-gray-600 mt-4">Loading dashboard...</p>
+        </div>
+
+        <!-- Dashboard Content -->
+        <div id="content" class="hidden">
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="metric-card rounded-lg p-6 shadow-lg">
+                    <div class="metric-label">Total Active Tenants</div>
+                    <div class="metric-value" id="totalTenants">0</div>
+                </div>
+                <div class="metric-card success rounded-lg p-6 shadow-lg">
+                    <div class="metric-label">Avg Lead Engagement</div>
+                    <div class="metric-value"><span id="avgEngagement">0</span>%</div>
+                </div>
+                <div class="metric-card warning rounded-lg p-6 shadow-lg">
+                    <div class="metric-label">Avg Conversion Rate</div>
+                    <div class="metric-value"><span id="avgConversion">0</span>%</div>
+                </div>
+                <div class="metric-card danger rounded-lg p-6 shadow-lg">
+                    <div class="metric-label">Avg Unanswered Rate</div>
+                    <div class="metric-value"><span id="avgUnanswered">0</span>%</div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Engagement Distribution</h3>
+                    <canvas id="engagementChart"></canvas>
+                </div>
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Unanswered Rate by Tenant</h3>
+                    <canvas id="unansweredChart"></canvas>
+                </div>
+            </div>
+
+            <!-- All Tenants Table -->
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-6">Customer Performance</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b-2 border-gray-200">
+                                <th class="text-left py-3 px-4 font-semibold text-gray-700">Customer</th>
+                                <th class="text-center py-3 px-4 font-semibold text-gray-700">Sessions</th>
+                                <th class="text-center py-3 px-4 font-semibold text-gray-700">Messages</th>
+                                <th class="text-center py-3 px-4 font-semibold text-gray-700">Engagement</th>
+                                <th class="text-center py-3 px-4 font-semibold text-gray-700">Conversion</th>
+                                <th class="text-center py-3 px-4 font-semibold text-gray-700">Unanswered</th>
+                                <th class="text-center py-3 px-4 font-semibold text-gray-700">Latency</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tenantsTable">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Single Tenant Details (Modal-like) -->
+            <div id="tenantDetailModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                <div class="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-96 overflow-y-auto">
+                    <div class="flex justify-between items-center p-6 border-b">
+                        <h2 id="tenantDetailName" class="text-2xl font-bold text-gray-900"></h2>
+                        <button onclick="closeTenantDetail()" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
+                    </div>
+                    <div id="tenantDetailContent" class="p-6 grid grid-cols-2 gap-6">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error State -->
+        <div id="error" class="hidden bg-red-100 border-l-4 border-red-600 p-6 rounded">
+            <p class="text-red-700 font-semibold">Error loading dashboard</p>
+            <p id="errorMessage" class="text-red-600 text-sm mt-2"></p>
+        </div>
+    </div>
+
+    <script>
+        // Use same-origin API calls so the dashboard works on localhost, LAN IP, and domain/HTTPS.
+        const API_BASE = window.location.origin;
+        let allTenantsData = [];
+        let charts = {};
+
+        async function fetchDashboard() {
+            try {
+                const days = document.getElementById('dayFilter').value;
+                const response = await fetch(`${API_BASE}/api/analytics/summary?days=${days}`);
+                
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const data = await response.json();
+                allTenantsData = data.tenants || [];
+                
+                renderDashboard(data);
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('content').classList.remove('hidden');
+                document.getElementById('error').classList.add('hidden');
+            } catch (err) {
+                console.error('Dashboard error:', err);
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('error').classList.remove('hidden');
+                document.getElementById('errorMessage').textContent = err.message;
+            }
+        }
+
+        function renderDashboard(data) {
+            // Update summary cards
+            document.getElementById('totalTenants').textContent = data.total_tenants;
+            
+            if (allTenantsData.length > 0) {
+                const avgEngagement = (allTenantsData.reduce((sum, t) => sum + t.lead_engagement_rate_percent, 0) / allTenantsData.length).toFixed(1);
+                const avgConversion = (allTenantsData.reduce((sum, t) => sum + t.conversion_assist_rate_percent, 0) / allTenantsData.length).toFixed(1);
+                const avgUnanswered = (allTenantsData.reduce((sum, t) => sum + t.unanswered_rate_percent, 0) / allTenantsData.length).toFixed(1);
+                
+                document.getElementById('avgEngagement').textContent = avgEngagement;
+                document.getElementById('avgConversion').textContent = avgConversion;
+                document.getElementById('avgUnanswered').textContent = avgUnanswered;
+            }
+
+            renderChartsAndTable();
+        }
+
+        function renderChartsAndTable() {
+            // Engagement Chart
+            const engagementCtx = document.getElementById('engagementChart').getContext('2d');
+            if (charts.engagement) charts.engagement.destroy();
+            charts.engagement = new Chart(engagementCtx, {
+                type: 'bar',
+                data: {
+                    labels: allTenantsData.map(t => t.tenant_name),
+                    datasets: [{
+                        label: 'Lead Engagement %',
+                        data: allTenantsData.map(t => t.lead_engagement_rate_percent),
+                        backgroundColor: 'rgba(132, 250, 176, 0.8)',
+                        borderColor: 'rgb(132, 250, 176)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: { y: { beginAtZero: true, max: 100 } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            // Unanswered Chart
+            const unansweredCtx = document.getElementById('unansweredChart').getContext('2d');
+            if (charts.unanswered) charts.unanswered.destroy();
+            charts.unanswered = new Chart(unansweredCtx, {
+                type: 'bar',
+                data: {
+                    labels: allTenantsData.map(t => t.tenant_name),
+                    datasets: [{
+                        label: 'Unanswered %',
+                        data: allTenantsData.map(t => t.unanswered_rate_percent),
+                        backgroundColor: 'rgba(255, 107, 107, 0.8)',
+                        borderColor: 'rgb(255, 107, 107)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: { y: { beginAtZero: true, max: 100 } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            // Render table
+            const tbody = document.getElementById('tenantsTable');
+            tbody.innerHTML = allTenantsData.map(tenant => `
+                <tr class="tenant-row border-b border-gray-200 hover:bg-gray-50" onclick="showTenantDetail('${tenant.tenant_id}', '${tenant.tenant_name}')">
+                    <td class="py-4 px-4 font-medium text-gray-900">${tenant.tenant_name}</td>
+                    <td class="py-4 px-4 text-center text-gray-700">${Math.floor(tenant.sessions)}</td>
+                    <td class="py-4 px-4 text-center text-gray-700">${Math.floor(tenant.total_messages)}</td>
+                    <td class="py-4 px-4 text-center">
+                        <span class="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold">
+                            ${tenant.lead_engagement_rate_percent.toFixed(1)}%
+                        </span>
+                    </td>
+                    <td class="py-4 px-4 text-center">
+                        <span class="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">
+                            ${tenant.conversion_assist_rate_percent.toFixed(1)}%
+                        </span>
+                    </td>
+                    <td class="py-4 px-4 text-center">
+                        <span class="inline-block ${tenant.unanswered_rate_percent > 10 ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'} px-3 py-1 rounded-full text-sm font-semibold">
+                            ${tenant.unanswered_rate_percent.toFixed(1)}%
+                        </span>
+                    </td>
+                    <td class="py-4 px-4 text-center text-gray-700">${tenant.avg_response_latency_ms.toFixed(0)}ms</td>
+                </tr>
+            `).join('');
+        }
+
+        function showTenantDetail(tenantId, tenantName) {
+            const tenant = allTenantsData.find(t => t.tenant_id === tenantId);
+            if (!tenant) return;
+
+            document.getElementById('tenantDetailName').textContent = tenantName;
+            document.getElementById('tenantDetailContent').innerHTML = `
+                <div class="bg-blue-50 p-4 rounded">
+                    <p class="text-gray-600 text-sm">Sessions</p>
+                    <p class="text-2xl font-bold text-blue-600">${Math.floor(tenant.sessions)}</p>
+                </div>
+                <div class="bg-purple-50 p-4 rounded">
+                    <p class="text-gray-600 text-sm">Total Messages</p>
+                    <p class="text-2xl font-bold text-purple-600">${Math.floor(tenant.total_messages)}</p>
+                </div>
+                <div class="bg-green-50 p-4 rounded">
+                    <p class="text-gray-600 text-sm">Lead Engagement Rate</p>
+                    <p class="text-2xl font-bold text-green-600">${tenant.lead_engagement_rate_percent.toFixed(1)}%</p>
+                </div>
+                <div class="bg-orange-50 p-4 rounded">
+                    <p class="text-gray-600 text-sm">Conversion Assist Rate</p>
+                    <p class="text-2xl font-bold text-orange-600">${tenant.conversion_assist_rate_percent.toFixed(1)}%</p>
+                </div>
+                <div class="bg-red-50 p-4 rounded">
+                    <p class="text-gray-600 text-sm">Unanswered Responses</p>
+                    <p class="text-2xl font-bold text-red-600">${Math.floor(tenant.unanswered_count)} (${tenant.unanswered_rate_percent.toFixed(1)}%)</p>
+                </div>
+                <div class="bg-gray-50 p-4 rounded">
+                    <p class="text-gray-600 text-sm">Fallback Rate</p>
+                    <p class="text-2xl font-bold text-gray-600">${tenant.fallback_rate_percent.toFixed(1)}%</p>
+                </div>
+                <div class="bg-gray-50 p-4 rounded">
+                    <p class="text-gray-600 text-sm">Error Rate</p>
+                    <p class="text-2xl font-bold text-gray-600">${tenant.llm_error_rate_percent.toFixed(1)}%</p>
+                </div>
+                <div class="bg-gray-50 p-4 rounded">
+                    <p class="text-gray-600 text-sm">Avg Response Latency</p>
+                    <p class="text-2xl font-bold text-gray-600">${tenant.avg_response_latency_ms.toFixed(0)}ms</p>
+                </div>
+            `;
+            document.getElementById('tenantDetailModal').classList.remove('hidden');
+        }
+
+        function closeTenantDetail() {
+            document.getElementById('tenantDetailModal').classList.add('hidden');
+        }
+
+        // Event listeners
+        document.getElementById('refreshBtn').addEventListener('click', fetchDashboard);
+        document.getElementById('dayFilter').addEventListener('change', fetchDashboard);
+
+        // Initial load
+        fetchDashboard();
+    </script>
+</body>
+</html>

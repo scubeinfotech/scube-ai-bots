@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot Widget - Responsive Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+        }
+        .instructions {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="instructions">
+        <h1>Chatbot Widget - Mobile Responsive Test</h1>
+        <p>This page tests the responsive chatbot widget. Resize your browser to see how it adapts to different screen sizes.</p>
+        <p><strong>On mobile (width &lt; 600px):</strong></p>
+        <ul>
+            <li>Widget expands to full viewport width and height</li>
+            <li>Contact form fits perfectly with proper spacing</li>
+            <li>Submit button is large and easy to tap (min-height: 52px)</li>
+            <li>Input fields have appropriate font size (16px) for mobile</li>
+            <li>No horizontal scrolling or overflow issues</li>
+        </ul>
+    </div>
+
+    <!-- Chatbot Widget -->
+    <script src="./widget.js"></script>
+    <script>
+        LLMChatbot.init({
+            apiUrl: 'http://localhost:8000',
+            tenantId: 'test-tenant-123',
+            apiKey: 'test-key',
+            theme: {
+                primaryColor: '#3b82f6',
+                backgroundColor: '#ffffff',
+                textColor: '#1f2937'
+            }
+        });
+    </script>
+</body>
+</html>

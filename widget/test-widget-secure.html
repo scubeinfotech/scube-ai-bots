@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SECURE Chatbot Widget Test</title>
+</head>
+<body>
+  <h2>SECURE Chatbot Widget Test Page (No API Key exposed!)</h2>
+
+  <!--
+    THIS IS WHAT YOUR CUSTOMERS WILL EMBED
+    NO PERMANENT API KEY IS INCLUDED HERE
+  -->
+  <script src="http://chat.scubeinfotech.com.sg/static/widget.js"></script>
+  <script>
+    LLMChatbot.init({
+      apiUrl: 'http://chat.scubeinfotech.com.sg',
+      tenantId: 'c66e96d3-999c-4746-b11c-1758a9c2e982',
+      // ✅ ONLY PUBLIC tenantId here - NO API KEY
+      // authToken will be provided by customer's backend
+      authToken: 'REPLACE_WITH_TOKEN_FROM_CUSTOMER_BACKEND',
+      
+      // Optional: Customer sets this endpoint on THEIR server
+      tokenRefreshUrl: '/your-backend/get-chat-token'
+    });
+  </script>
+
+  <hr>
+  <p>Test the token endpoint first with curl:</p>
+  <pre>
+# 👇 Customer runs THIS ON THEIR BACKEND SERVER ONLY
+curl -X POST "http://chat.scubeinfotech.com.sg/api/chat/token/c66e96d3-999c-4746-b11c-1758a9c2e982" \
+  -H "X-API-Key: WuaNiH_SphcRLSwYPuhS9naquxQTuLTeOEmfhxL9V4s" \
+  -H "Content-Type: application/json" \
+  -d '{"origin": "https://customer-website.com"}'
+  </pre>
+</body>
+</html>

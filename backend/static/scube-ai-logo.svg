@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 220" role="img" aria-labelledby="title desc">
+  <title id="title">AI Chatbot Logo</title>
+  <desc id="desc">3D AI Chatbot logo with isometric cube and bold typography</desc>
+  <defs>
+    <linearGradient id="faceTop" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#818cf8"/>
+      <stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+    <linearGradient id="faceLeft" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#4f46e5"/>
+    </linearGradient>
+    <linearGradient id="faceRight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4f46e5"/>
+      <stop offset="100%" stop-color="#4338ca"/>
+    </linearGradient>
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a5b4fc" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#6366f1" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="3" dy="5" stdDeviation="6" flood-color="#4338ca" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+
+  <!-- 3D Isometric Cube -->
+  <g transform="translate(40, 20)" filter="url(#shadow)">
+    <!-- Top face -->
+    <path d="M84 10 L148 42 L84 74 L20 42 Z" fill="url(#faceTop)" stroke="#4338ca" stroke-width="2" stroke-linejoin="round"/>
+    <!-- Left face -->
+    <path d="M20 42 L84 74 L84 156 L20 124 Z" fill="url(#faceLeft)" stroke="#4338ca" stroke-width="2" stroke-linejoin="round"/>
+    <!-- Right face -->
+    <path d="M84 74 L148 42 L148 124 L84 156 Z" fill="url(#faceRight)" stroke="#4338ca" stroke-width="2" stroke-linejoin="round"/>
+
+    <!-- Glossy highlight on top -->
+    <path d="M40 38 L84 14 L128 38" fill="none" stroke="url(#glow)" stroke-width="6" stroke-linecap="round" opacity="0.5"/>
+
+    <!-- AI circuit dots on left face -->
+    <circle cx="52" cy="78" r="4" fill="#c7d2fe" opacity="0.8"/>
+    <circle cx="68" cy="96" r="3" fill="#c7d2fe" opacity="0.6"/>
+    <circle cx="44" cy="108" r="3.5" fill="#c7d2fe" opacity="0.7"/>
+    <path d="M52 78 L68 96 L44 108" fill="none" stroke="#c7d2fe" stroke-width="1.5" opacity="0.4" stroke-linecap="round"/>
+
+    <!-- AI circuit dots on right face -->
+    <circle cx="104" cy="78" r="3.5" fill="#e0e7ff" opacity="0.7"/>
+    <circle cx="126" cy="96" r="3" fill="#e0e7ff" opacity="0.5"/>
+    <circle cx="112" cy="112" r="4" fill="#e0e7ff" opacity="0.6"/>
+    <path d="M104 78 L126 96 L112 112" fill="none" stroke="#e0e7ff" stroke-width="1.5" opacity="0.3" stroke-linecap="round"/>
+
+    <!-- Brain/mini-chip on right face -->
+    <rect x="100" y="88" width="20" height="14" rx="3" fill="#1e1b4b" opacity="0.5" stroke="#a5b4fc" stroke-width="1"/>
+    <line x1="106" y1="91" x2="106" y2="99" stroke="#a5b4fc" stroke-width="1.5" opacity="0.6"/>
+    <line x1="110" y1="91" x2="110" y2="99" stroke="#a5b4fc" stroke-width="1.5" opacity="0.6"/>
+    <line x1="114" y1="91" x2="114" y2="99" stroke="#a5b4fc" stroke-width="1.5" opacity="0.6"/>
+  </g>
+
+  <!-- Bold Typography -->
+  <g transform="translate(205, 42)">
+    <!-- AI -->
+    <text x="0" y="80" font-family="'Segoe UI', 'Trebuchet MS', Arial, sans-serif" font-size="96" font-weight="900" fill="url(#textGrad)" letter-spacing="2">AI</text>
+    <!-- Chatbot -->
+    <text x="0" y="130" font-family="'Segoe UI', Arial, sans-serif" font-size="40" font-weight="700" fill="#6b7280" letter-spacing="3">CHATBOT</text>
+    <!-- Subline -->
+    <text x="0" y="158" font-family="'Segoe UI', Arial, sans-serif" font-size="18" fill="#9ca3af" letter-spacing="1.5">Intelligent Solutions</text>
+  </g>
+</svg>

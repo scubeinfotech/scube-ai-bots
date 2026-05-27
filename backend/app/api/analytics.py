@@ -1,0 +1,608 @@
+
+from datetime import datetime, timedelta, timezone
+from typing import Dict, List, Optional, Set
+ 
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
+from sqlalchemy import func
+from app.database import get_db
+from app.models import ChatMessage, ChatSession, Tenant, WhatsAppMessage, WhatsAppSession, WhatsAppTentativeBooking
+from app.models.whatsapp import WhatsAppAnalyticsEvent
+from app.services.analytics import AnalyticsService
+from app.services.analytics_logger import (
+    INTENT_DETECTED, BOOKING_CREATED, BOOKING_CONFIRMED, BOOKING_CANCELLED,
+    HUMAN_INTERVENTION, CALENDAR_SYNCED, CRM_SYNCED,
+)
+
+
+# --- STEP 4 RESPONSE MODELS ---
+class Step4TenantMetricsResponse(BaseModel):
+    tenant_id: str
+    tenant_name: str
+    conversations: dict
+    queue: dict
+    automation: dict
+    conversions: dict
+
+
+class Step4MultiTenantItem(BaseModel):
+    tenant_id: str
+    tenant_name: str
+    unified_threads: float
+    pending_queue: float
+    confirmed_bookings: float
+    human_intervention_rate_percent: float
+    auto_response_usage_rate_percent: float
+    conversion_rate_percent: float
+    calendar_sync_rate_percent: float
+    crm_sync_rate_percent: float
+
+
+class Step4MultiTenantResponse(BaseModel):
+    window_days: int
+    generated_at: str
+    total_tenants: int
+    tenants: list[Step4MultiTenantItem]
+
+router = APIRouter(prefix="/api/analytics", tags=["Analytics"])
+
+# --- FEEDBACK QUALITY ENDPOINTS ---
+
+class FeedbackQualityResponse(BaseModel):
+    tenant_id: Optional[str] = None
+    total_feedback: int
+    positive_feedback: int
+    negative_feedback: int
+    quality_percent: Optional[float] = None
+
+class FlaggedResponseItem(BaseModel):
+    id: str
+    content: str
+    feedback_score: int
+    feedback_comment: Optional[str] = None
+    created_at: str
+    session_id: str
+    tenant_id: str
+
+
+@router.get("/tenant/{tenant_id}/quality", response_model=FeedbackQualityResponse)
+async def get_tenant_quality_metrics(tenant_id: str, db: Session = Depends(get_db)):
+    """Get feedback quality metrics for a tenant."""
+    stats = AnalyticsService.get_feedback_quality_stats(db, tenant_id)
+    return stats
+
+
+@router.get("/tenant/{tenant_id}/flagged_responses", response_model=List[FlaggedResponseItem])
+async def get_flagged_low_quality_responses(tenant_id: str, db: Session = Depends(get_db)):
+    """Get flagged low-quality responses for admin review."""
+    flagged = AnalyticsService.get_flagged_low_quality_responses(db, tenant_id)
+    return flagged
+
+
+class DashboardMetricsResponse(BaseModel):
+    tenant_id: str
+    tenant_name: str
+    window_days: int
+    generated_at: str
+    sales: Dict[str, float]
+    maintenance: Dict[str, float]
+    overview: Dict[str, float]
+    csat_percent: Optional[float] = None
+    resolution_rate_percent: Optional[float] = None
+
+
+class TenantSummaryItem(BaseModel):
+     tenant_id: str
+     tenant_name: str
+     sessions: float
+     total_messages: float
+     unanswered_count: float = Field(description="Questions needing improvement or unable to answer")
+     unanswered_rate_percent: float
+     lead_engagement_rate_percent: float
+     conversion_assist_rate_percent: float
+     fallback_rate_percent: float
+     llm_error_rate_percent: float
+     avg_response_latency_ms: float
+     csat_percent: Optional[float] = None
+     resolution_rate_percent: Optional[float] = None
+
+
+class MultiTenantDashboardResponse(BaseModel):
+    window_days: int
+    generated_at: str
+    total_tenants: int
+    tenants: List[TenantSummaryItem]
+
+
+@router.get("/summary", response_model=MultiTenantDashboardResponse)
+async def multi_tenant_summary(
+    days: int = Query(default=7, ge=1, le=90),
+    db: Session = Depends(get_db),
+):
+    """Multi-tenant dashboard comparing all active tenants."""
+    import logging
+    logger = logging.getLogger("analytics-debug")
+    tenants = db.query(Tenant).filter(Tenant.is_active == True).all()
+    logger.warning(f"[DEBUG] All active tenants: {[{'id': t.id, 'name': t.name} for t in tenants]}")
+    if not tenants:
+        logger.warning("[DEBUG] No active tenants found.")
+        return {
+            "window_days": days,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "total_tenants": 0,
+            "tenants": [],
+        }
+
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+    tenant_summaries = []
+    tenant_ids = [t.id for t in tenants]
+    all_latencies = []
+    if tenant_ids:
+        latency_rows = db.query(ChatMessage.latency_ms).filter(
+            ChatMessage.tenant_id.in_(tenant_ids),
+            ChatMessage.role == "assistant",
+            ChatMessage.latency_ms.isnot(None),
+            ChatMessage.created_at >= since
+        ).all()
+        all_latencies = [row[0] for row in latency_rows]
+
+    filtered_tenants = []
+    for tenant in tenants:
+        sessions = db.query(ChatSession).filter(
+            ChatSession.tenant_id == tenant.id,
+            ChatSession.created_at >= since
+        ).all()
+
+        messages = db.query(ChatMessage).filter(
+            ChatMessage.tenant_id == tenant.id,
+            ChatMessage.created_at >= since
+        ).all()
+
+        user_messages = [m for m in messages if m.role == "user"]
+        assistant_messages = [m for m in messages if m.role == "assistant"]
+
+        if not sessions and not messages:
+            logger.warning(f"[DEBUG] Skipping tenant {tenant.id} ({tenant.name}) - no recent sessions/messages in window.")
+            continue
+        filtered_tenants.append(tenant.id)
+
+        product_terms = _extract_product_terms(tenant.knowledge_context)
+        product_intent_count = sum(1 for m in user_messages if _contains_any(m.content, product_terms))
+        product_intent_session_ids = {
+            m.session_id for m in user_messages if _contains_any(m.content, product_terms)
+        }
+
+        cta_terms = {"demo", "book", "booking", "schedule", "call", "consultation", "pricing", "price", "sales", "contact", "trial"}
+        cta_session_ids = {
+            m.session_id for m in assistant_messages if _contains_any(m.content, cta_terms)
+        }
+
+        unanswered_signatures = [
+            "I couldn't find any information",
+            "haven't asked a specific question",
+            "Could you please remind me",
+            "Could you please provide more context",
+        ]
+        unanswered_count = sum(
+            1 for m in assistant_messages if any(sig.lower() in (m.content or "").lower() for sig in unanswered_signatures)
+        )
+
+        fallback_signatures = [
+            "Could you please provide more context",
+            "I couldn't find any information",
+            "haven't asked a specific question",
+            "Could you please remind me what it was about",
+        ]
+        fallback_count = sum(
+            1 for m in assistant_messages if any(sig.lower() in (m.content or "").lower() for sig in fallback_signatures)
+        )
+
+        error_signature = "I apologize, but I'm having trouble processing your request"
+        llm_error_count = sum(1 for m in assistant_messages if error_signature in (m.content or ""))
+
+        latencies = [m.latency_ms for m in assistant_messages if isinstance(m.latency_ms, (int, float))]
+        avg_latency = round(sum(latencies) / len(latencies), 2) if latencies else 0.0
+
+        session_count = len(sessions)
+        user_count = len(user_messages)
+        assistant_count = len(assistant_messages)
+        total_messages = len(messages)
+
+        lead_engagement_rate = round((product_intent_count / user_count) * 100, 2) if user_count else 0.0
+        conversion_assist_sessions = product_intent_session_ids.intersection(cta_session_ids)
+        conversion_assist_rate = (
+            round((len(conversion_assist_sessions) / len(product_intent_session_ids)) * 100, 2)
+            if product_intent_session_ids
+            else 0.0
+        )
+        fallback_rate = round((fallback_count / assistant_count) * 100, 2) if assistant_count else 0.0
+        llm_error_rate = round((llm_error_count / assistant_count) * 100, 2) if assistant_count else 0.0
+        unanswered_rate = round((unanswered_count / assistant_count) * 100, 2) if assistant_count else 0.0
+
+        # CSAT percentage
+        feedback_msgs = [m for m in assistant_messages if m.feedback_score is not None]
+        total_fb = len(feedback_msgs)
+        pos_fb = sum(1 for m in feedback_msgs if m.feedback_score == 1)
+        csat_percent = round((pos_fb / total_fb * 100), 2) if total_fb > 0 else None
+
+        # Resolution Rate (sessions with positive feedback)
+        resolved_sessions = {m.session_id for m in feedback_msgs if m.feedback_score == 1}
+        resolution_rate_percent = round((len(resolved_sessions) / session_count * 100), 2) if session_count > 0 else None
+
+        tenant_summaries.append({
+            "tenant_id": tenant.id,
+            "tenant_name": tenant.name,
+            "sessions": float(session_count),
+            "total_messages": float(total_messages),
+            "unanswered_count": float(unanswered_count),
+            "unanswered_rate_percent": unanswered_rate,
+            "lead_engagement_rate_percent": lead_engagement_rate,
+            "conversion_assist_rate_percent": conversion_assist_rate,
+            "fallback_rate_percent": fallback_rate,
+            "llm_error_rate_percent": llm_error_rate,
+            "avg_response_latency_ms": avg_latency,
+            "csat_percent": csat_percent,
+            "resolution_rate_percent": resolution_rate_percent
+        })
+
+    logger.warning(f"[DEBUG] Tenants with data in window: {filtered_tenants}")
+
+    if all_latencies:
+        overall_avg_latency_ms = round(sum(all_latencies) / len(all_latencies), 2)
+        sorted_lat = sorted(all_latencies)
+        n = len(sorted_lat)
+        idx95 = int(n * 0.95)
+        if idx95 >= n:
+            idx95 = n - 1
+        overall_p95_latency_ms = sorted_lat[idx95]
+        idx99 = int(n * 0.99)
+        if idx99 >= n:
+            idx99 = n - 1
+        overall_p99_latency_ms = sorted_lat[idx99]
+    else:
+        overall_avg_latency_ms = None
+        overall_p95_latency_ms = None
+        overall_p99_latency_ms = None
+
+    return {
+        "window_days": days,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "total_tenants": len(tenant_summaries),
+        "tenants": sorted(tenant_summaries, key=lambda x: x["unanswered_count"], reverse=True),
+        "overall_avg_latency_ms": overall_avg_latency_ms,
+        "overall_p95_latency_ms": overall_p95_latency_ms,
+        "overall_p99_latency_ms": overall_p99_latency_ms,
+    }
+
+
+def _extract_product_terms(knowledge_context) -> Set[str]:
+    """Build product term set from tenant knowledge context."""
+    terms: Set[str] = set()
+
+    if not isinstance(knowledge_context, dict):
+        return terms
+
+    products = knowledge_context.get("products")
+    if not isinstance(products, list):
+        return terms
+
+    for product in products:
+        if not isinstance(product, dict):
+            continue
+        name = product.get("name") or product.get("title")
+        if isinstance(name, str) and name.strip():
+            terms.add(name.strip().lower())
+
+        aliases = product.get("aliases")
+        if isinstance(aliases, list):
+            for alias in aliases:
+                if isinstance(alias, str) and alias.strip():
+                    terms.add(alias.strip().lower())
+
+    return terms
+
+
+def _crm_sync_status(booking: WhatsAppTentativeBooking) -> Optional[str]:
+    extracted = booking.extracted_fields if isinstance(booking.extracted_fields, dict) else {}
+    crm_sync = extracted.get("crm_sync") if isinstance(extracted, dict) else None
+    if isinstance(crm_sync, dict):
+        return crm_sync.get("status")
+    return None
+
+
+def _human_reviewed(booking: WhatsAppTentativeBooking) -> bool:
+    extracted = booking.extracted_fields if isinstance(booking.extracted_fields, dict) else {}
+    manual_override = extracted.get("manual_override") if isinstance(extracted, dict) else None
+    return bool(manual_override) or booking.status in {"confirmed", "cancelled"}
+
+
+def _step4_metrics_for_tenant(db: Session, tenant: Tenant, days: int) -> Dict[str, object]:
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+
+    wa_sessions = db.query(WhatsAppSession).filter(
+        WhatsAppSession.tenant_id == tenant.id,
+        WhatsAppSession.created_at >= since,
+    ).all()
+
+    linked_llm_session_ids = {
+        session.llm_session_id
+        for session in wa_sessions
+        if session.llm_session_id
+    }
+
+    web_sessions = db.query(ChatSession).filter(
+        ChatSession.tenant_id == tenant.id,
+        ChatSession.created_at >= since,
+    ).all()
+    standalone_web_sessions = [session for session in web_sessions if session.id not in linked_llm_session_ids]
+
+    chat_messages = db.query(ChatMessage).filter(
+        ChatMessage.tenant_id == tenant.id,
+        ChatMessage.created_at >= since,
+    ).all()
+    standalone_chat_messages = [
+        msg for msg in chat_messages if msg.session_id not in linked_llm_session_ids
+    ]
+
+    wa_messages = db.query(WhatsAppMessage).filter(
+        WhatsAppMessage.tenant_id == tenant.id,
+        WhatsAppMessage.created_at >= since,
+    ).all()
+
+    bookings = db.query(WhatsAppTentativeBooking).filter(
+        WhatsAppTentativeBooking.tenant_id == tenant.id,
+        WhatsAppTentativeBooking.created_at >= since,
+    ).all()
+
+    pending_queue = sum(1 for booking in bookings if booking.status == "tentative")
+    confirmed_bookings = sum(1 for booking in bookings if booking.status == "confirmed")
+    reviewed_bookings = sum(1 for booking in bookings if _human_reviewed(booking))
+    calendar_synced = sum(1 for booking in bookings if booking.google_calendar_event_id)
+    crm_synced = sum(1 for booking in bookings if _crm_sync_status(booking) == "synced")
+
+    assistant_web_messages = [msg for msg in standalone_chat_messages if msg.role == "assistant"]
+    outbound_wa_messages = [msg for msg in wa_messages if msg.direction == "outbound"]
+    inbound_wa_messages = [msg for msg in wa_messages if msg.direction == "inbound"]
+
+    total_threads = len(standalone_web_sessions) + len(wa_sessions)
+    total_inbound_messages = len([msg for msg in standalone_chat_messages if msg.role == "user"]) + len(inbound_wa_messages)
+    total_auto_responses = len(assistant_web_messages) + len(outbound_wa_messages)
+
+    return {
+        "tenant_id": tenant.id,
+        "tenant_name": tenant.name,
+        "window_days": days,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "conversations": {
+            "web_chat_threads": float(len(standalone_web_sessions)),
+            "whatsapp_threads": float(len(wa_sessions)),
+            "unified_threads": float(total_threads),
+            "inbound_messages": float(total_inbound_messages),
+        },
+        "queue": {
+            "pending_queue": float(pending_queue),
+            "reviewed_bookings": float(reviewed_bookings),
+            "confirmed_bookings": float(confirmed_bookings),
+            "cancelled_bookings": float(sum(1 for booking in bookings if booking.status == "cancelled")),
+        },
+        "automation": {
+            "auto_response_messages": float(total_auto_responses),
+            "auto_response_usage_rate_percent": round((total_auto_responses / total_inbound_messages) * 100, 2) if total_inbound_messages else 0.0,
+            "human_intervention_rate_percent": round((reviewed_bookings / len(bookings)) * 100, 2) if bookings else 0.0,
+            "calendar_sync_rate_percent": round((calendar_synced / confirmed_bookings) * 100, 2) if confirmed_bookings else 0.0,
+            "crm_sync_rate_percent": round((crm_synced / confirmed_bookings) * 100, 2) if confirmed_bookings else 0.0,
+        },
+        "conversions": {
+            "booking_attempts": float(len(bookings)),
+            "confirmed_bookings": float(confirmed_bookings),
+            "conversion_rate_percent": round((confirmed_bookings / len(bookings)) * 100, 2) if bookings else 0.0,
+            "calendar_synced_confirmations": float(calendar_synced),
+            "crm_synced_confirmations": float(crm_synced),
+        },
+    }
+
+
+@router.get("/tenant/{tenant_id}/step4", response_model=Step4TenantMetricsResponse)
+async def tenant_step4_dashboard(
+    tenant_id: str,
+    days: int = Query(default=30, ge=1, le=90),
+    db: Session = Depends(get_db),
+):
+    """Step 4 tenant analytics across unified conversations and booking operations."""
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id, Tenant.is_active == True).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    return _step4_metrics_for_tenant(db, tenant, days)
+
+
+@router.get("/step4/summary", response_model=Step4MultiTenantResponse)
+async def multi_tenant_step4_summary(
+    days: int = Query(default=30, ge=1, le=90),
+    db: Session = Depends(get_db),
+):
+    """Step 4 admin analytics summary across tenants."""
+    tenants = db.query(Tenant).filter(Tenant.is_active == True).all()
+    items: List[Dict[str, float]] = []
+    for tenant in tenants:
+        metrics = _step4_metrics_for_tenant(db, tenant, days)
+        items.append(
+            {
+                "tenant_id": tenant.id,
+                "tenant_name": tenant.name,
+                "unified_threads": metrics["conversations"]["unified_threads"],
+                "pending_queue": metrics["queue"]["pending_queue"],
+                "confirmed_bookings": metrics["queue"]["confirmed_bookings"],
+                "human_intervention_rate_percent": metrics["automation"]["human_intervention_rate_percent"],
+                "auto_response_usage_rate_percent": metrics["automation"]["auto_response_usage_rate_percent"],
+                "conversion_rate_percent": metrics["conversions"]["conversion_rate_percent"],
+                "calendar_sync_rate_percent": metrics["automation"]["calendar_sync_rate_percent"],
+                "crm_sync_rate_percent": metrics["automation"]["crm_sync_rate_percent"],
+            }
+        )
+
+    items.sort(key=lambda item: (item["pending_queue"], -item["conversion_rate_percent"]), reverse=True)
+    return {
+        "window_days": days,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "total_tenants": len(items),
+        "tenants": items,
+    }
+
+
+def _contains_any(content: str, terms: Set[str]) -> bool:
+    if not content or not terms:
+        return False
+    content_lower = content.lower()
+    return any(term in content_lower for term in terms)
+
+
+# ── Step 6 – WhatsApp Analytics ───────────────────────────────────────────────
+
+def _step6_metrics_for_tenant(db: Session, tenant: Tenant, days: int) -> Dict:
+    """Compute Step 6 analytics from whatsapp_analytics_events."""
+    from sqlalchemy import func as sqlfunc
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+
+    events = (
+        db.query(WhatsAppAnalyticsEvent)
+        .filter(
+            WhatsAppAnalyticsEvent.tenant_id == tenant.id,
+            WhatsAppAnalyticsEvent.created_at >= cutoff,
+        )
+        .all()
+    )
+
+    # ── Intent accuracy ───────────────────────────────────────────────────────
+    intent_events = [e for e in events if e.event_type == INTENT_DETECTED]
+    total_detected = len(intent_events)
+    by_intent: Dict[str, int] = {}
+    confidence_sum = 0.0
+    high_conf = 0
+    for e in intent_events:
+        key = e.intent or "unknown"
+        by_intent[key] = by_intent.get(key, 0) + 1
+        score = e.confidence_score or 0.0
+        confidence_sum += score
+        if score >= 0.7:
+            high_conf += 1
+    avg_confidence = round(confidence_sum / total_detected, 3) if total_detected else 0.0
+    high_confidence_pct = round(high_conf * 100 / total_detected, 1) if total_detected else 0.0
+
+    # ── Conversion funnel ─────────────────────────────────────────────────────
+    bookings_created   = sum(1 for e in events if e.event_type == BOOKING_CREATED)
+    bookings_confirmed = sum(1 for e in events if e.event_type == BOOKING_CONFIRMED)
+    bookings_cancelled = sum(1 for e in events if e.event_type == BOOKING_CANCELLED)
+    conversion_rate = round(bookings_confirmed * 100 / bookings_created, 1) if bookings_created else 0.0
+
+    # ── Human intervention ────────────────────────────────────────────────────
+    intervention_events = [e for e in events if e.event_type == HUMAN_INTERVENTION]
+    total_interventions = len(intervention_events)
+    by_sub: Dict[str, int] = {}
+    for e in intervention_events:
+        key = e.sub_type or "other"
+        by_sub[key] = by_sub.get(key, 0) + 1
+    intervention_rate = round(total_interventions * 100 / bookings_created, 1) if bookings_created else 0.0
+
+    # ── Automation ────────────────────────────────────────────────────────────
+    calendar_synced = sum(1 for e in events if e.event_type == CALENDAR_SYNCED)
+    crm_synced      = sum(1 for e in events if e.event_type == CRM_SYNCED)
+    cal_rate = round(calendar_synced * 100 / bookings_confirmed, 1) if bookings_confirmed else 0.0
+    crm_rate = round(crm_synced * 100 / bookings_confirmed, 1) if bookings_confirmed else 0.0
+
+    # ── Daily trend (last `days` days) ────────────────────────────────────────
+    trend_map: Dict[str, Dict[str, int]] = {}
+    for i in range(days):
+        day = (datetime.now(timezone.utc) - timedelta(days=i)).strftime("%Y-%m-%d")
+        trend_map[day] = {"intents": 0, "bookings": 0, "confirmed": 0, "interventions": 0}
+    for e in events:
+        day = e.created_at.strftime("%Y-%m-%d") if e.created_at else None
+        if not day or day not in trend_map:
+            continue
+        if e.event_type == INTENT_DETECTED:
+            trend_map[day]["intents"] += 1
+        elif e.event_type == BOOKING_CREATED:
+            trend_map[day]["bookings"] += 1
+        elif e.event_type == BOOKING_CONFIRMED:
+            trend_map[day]["confirmed"] += 1
+        elif e.event_type == HUMAN_INTERVENTION:
+            trend_map[day]["interventions"] += 1
+    daily_trend = [{"date": d, **v} for d, v in sorted(trend_map.items())]
+
+    return {
+        "tenant_id": tenant.id,
+        "tenant_name": tenant.name,
+        "window_days": days,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "intent_accuracy": {
+            "total_detected": total_detected,
+            "by_intent": by_intent,
+            "avg_confidence": avg_confidence,
+            "high_confidence_pct": high_confidence_pct,
+        },
+        "conversion_funnel": {
+            "intents_detected": total_detected,
+            "bookings_created": bookings_created,
+            "bookings_confirmed": bookings_confirmed,
+            "bookings_cancelled": bookings_cancelled,
+            "conversion_rate_pct": conversion_rate,
+        },
+        "human_intervention": {
+            "total_interventions": total_interventions,
+            "intervention_rate_pct": intervention_rate,
+            "by_sub_type": by_sub,
+        },
+        "automation": {
+            "calendar_synced": calendar_synced,
+            "crm_synced": crm_synced,
+            "calendar_sync_rate_pct": cal_rate,
+            "crm_sync_rate_pct": crm_rate,
+        },
+        "daily_trend": daily_trend,
+    }
+
+
+@router.get("/tenant/{tenant_id}/whatsapp")
+async def tenant_whatsapp_analytics(
+    tenant_id: str,
+    days: int = Query(default=30, ge=1, le=90),
+    db: Session = Depends(get_db),
+):
+    """Step 6: per-tenant WhatsApp analytics – intent accuracy, conversion funnel,
+    human intervention rate, automation metrics, and daily trend."""
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    return _step6_metrics_for_tenant(db, tenant, days)
+
+
+@router.get("/whatsapp/summary")
+async def whatsapp_analytics_summary(
+    days: int = Query(default=30, ge=1, le=90),
+    db: Session = Depends(get_db),
+):
+    """Step 6: cross-tenant WhatsApp analytics summary."""
+    tenants = db.query(Tenant).filter(Tenant.is_active == True).all()
+    items = []
+    for tenant in tenants:
+        m = _step6_metrics_for_tenant(db, tenant, days)
+        items.append({
+            "tenant_id": tenant.id,
+            "tenant_name": tenant.name,
+            "total_intents_detected": m["intent_accuracy"]["total_detected"],
+            "avg_confidence": m["intent_accuracy"]["avg_confidence"],
+            "bookings_created": m["conversion_funnel"]["bookings_created"],
+            "bookings_confirmed": m["conversion_funnel"]["bookings_confirmed"],
+            "conversion_rate_pct": m["conversion_funnel"]["conversion_rate_pct"],
+            "human_intervention_rate_pct": m["human_intervention"]["intervention_rate_pct"],
+            "calendar_sync_rate_pct": m["automation"]["calendar_sync_rate_pct"],
+            "crm_sync_rate_pct": m["automation"]["crm_sync_rate_pct"],
+        })
+    items.sort(key=lambda x: x["bookings_confirmed"], reverse=True)
+    return {
+        "window_days": days,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "total_tenants": len(items),
+        "tenants": items,
+    }

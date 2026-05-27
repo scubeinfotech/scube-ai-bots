@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 220" role="img" aria-labelledby="title desc">
+  <title id="title">SCUBE AI Logo</title>
+  <desc id="desc">SCUBE AI Intelligent Solutions logo with cube and circuit motif</desc>
+  <defs>
+    <linearGradient id="gradBlueTeal" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2B6DE2" />
+      <stop offset="55%" stop-color="#23B7D9" />
+      <stop offset="100%" stop-color="#67C85A" />
+    </linearGradient>
+    <style>
+      .wordmark { font-family: "Segoe UI", "Trebuchet MS", Arial, sans-serif; font-weight: 800; letter-spacing: 1px; }
+      .subline { font-family: "Segoe UI", Arial, sans-serif; font-size: 28px; fill: #8F97A3; letter-spacing: 0.7px; }
+    </style>
+  </defs>
+
+  <g transform="translate(26, 16)">
+    <!-- Isometric cube outline -->
+    <path d="M84 12L148 44V116L84 148L20 116V44Z" fill="none" stroke="url(#gradBlueTeal)" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M84 12V148" fill="none" stroke="url(#gradBlueTeal)" stroke-width="5" stroke-linecap="round"/>
+    <path d="M20 44L84 76L148 44" fill="none" stroke="url(#gradBlueTeal)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- Circuit pattern -->
+    <g fill="none" stroke="url(#gradBlueTeal)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M30 84H54L68 96H84"/>
+      <path d="M30 98H48"/>
+      <path d="M30 112H58L72 122H84"/>
+      <path d="M84 96H100L112 86H138"/>
+      <path d="M84 118H98L114 106H138"/>
+      <path d="M84 132H104L120 122H138"/>
+    </g>
+    <g fill="url(#gradBlueTeal)">
+      <circle cx="30" cy="84" r="4.5"/>
+      <circle cx="30" cy="98" r="4.5"/>
+      <circle cx="30" cy="112" r="4.5"/>
+      <circle cx="138" cy="86" r="4.5"/>
+      <circle cx="138" cy="106" r="4.5"/>
+      <circle cx="138" cy="122" r="4.5"/>
+    </g>
+  </g>
+
+  <g transform="translate(200, 44)">
+    <text x="0" y="74" class="wordmark" font-size="88" fill="#163B72">SCUBE</text>
+    <text x="338" y="74" class="wordmark" font-size="88" fill="#67C85A">AI</text>
+    <text x="250" y="124" class="subline" text-anchor="middle">Intelligent Solutions</text>
+  </g>
+</svg>

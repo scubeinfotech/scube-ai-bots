@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Chatbot</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    #llm-chat-widget {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 9999;
+      font-family: inherit;
+    }
+    .chat-button {
+      width: 60px; height: 60px; border-radius: 50%;
+      background: linear-gradient(135deg,#6366f1,#8b5cf6);
+      color: white; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; box-shadow: 0 4px 20px rgba(99,102,241,0.5);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .chat-button:hover { transform: scale(1.05); box-shadow: 0 6px 24px rgba(99,102,241,0.6); }
+    .chat-window {
+      position: absolute; bottom: 80px; right: 0;
+      width: 400px; height: 520px; max-height: calc(100vh - 100px);
+      background: #111827; border-radius: 16px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+      display: flex; flex-direction: column; overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .chat-header {
+      padding: 16px; background: linear-gradient(135deg,#1e1b4b,#312e81);
+      color: white; display: flex; justify-content: space-between; align-items: center;
+    }
+    .chat-messages {
+      flex: 1; overflow-y: auto; padding: 16px;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .message { max-width: 85%; padding: 12px 16px; border-radius: 16px; font-size: 14px; line-height: 1.5; }
+    .message.user { align-self: flex-end; background: #6366f1; color: white; border-bottom-right-radius: 4px; }
+    .message.assistant { align-self: flex-start; background: #1f2937; color: #e5e7eb; border-bottom-left-radius: 4px; border: 1px solid rgba(255,255,255,0.06); }
+    .typing-indicator { display: inline-flex; gap: 4px; padding: 12px 16px; background: #1f2937; border-radius: 16px; align-self: flex-start; }
+    .typing-dot { width: 8px; height: 8px; background: #6b7280; border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both; }
+    .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+    .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+    @keyframes bounce { 0%,80%,100% { transform: scale(0); } 40% { transform: scale(1); } }
+    .chat-input-container { padding: 12px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; gap: 8px; background: #0f172a; }
+    .chat-input { flex: 1; padding: 10px 14px; border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; font-size: 14px; outline: none; background: #1e293b; color: white; resize: none; }
+    .chat-input:focus { border-color: #6366f1; }
+    .chat-input::placeholder { color: #6b7280; }
+    .send-button { width: 40px; height: 40px; border-radius: 50%; border: none; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; color: white; transition: background 0.2s; }
+    .send-button:hover { opacity: 0.9; }
+    .send-button:disabled { background: #374151 !important; cursor: not-allowed; }
+    .close-button { background: none; border: none; color: rgba(255,255,255,0.6); cursor: pointer; font-size: 22px; padding: 4px; line-height: 1; }
+    .close-button:hover { color: white; }
+    .welcome-message { text-align: center; padding: 20px; color: #9ca3af; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+  </style>
+</head>
+<body class="bg-gray-950 min-h-screen flex items-center justify-center" style="background-color:#030712;">
+  <div class="max-w-5xl mx-auto px-4 py-8 w-full">
+    <div class="mb-8 flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <img src="/static/scube-ai-logo.svg" alt="Logo" class="h-10 w-auto">
+        <div>
+          <h1 class="text-lg font-bold text-white" id="pageTenantName">Chatbot Test</h1>
+          <p class="text-sm text-gray-500">Try your AI chatbot live</p>
+        </div>
+      </div>
+      <a href="/public/dashboard" class="text-sm text-gray-500 hover:text-indigo-400 transition flex items-center gap-1.5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+        Back to Dashboard
+      </a>
+    </div>
+
+    <div class="grid lg:grid-cols-2 gap-8 items-start">
+      <div class="space-y-6">
+        <div class="bg-gray-900/50 border border-white/5 rounded-2xl p-8">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.026 3 11c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+            </div>
+            <div>
+              <h2 class="text-xl font-semibold text-white">Chat Preview</h2>
+              <p class="text-sm text-gray-500">The chat widget appears in the bottom-right corner of your website. Open it below to test responses.</p>
+            </div>
+          </div>
+          <div class="bg-gray-950/80 border border-white/5 rounded-xl p-5">
+            <div class="flex items-center gap-3 text-sm">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span class="text-gray-400">Your chatbot is</span>
+              <span class="text-emerald-400 font-medium">Online</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-gray-900/50 border border-white/5 rounded-2xl p-8">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center">
+              <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div>
+              <h3 class="text-white font-medium">Testing Tips</h3>
+            </div>
+          </div>
+          <ul class="space-y-2 text-sm text-gray-400">
+            <li class="flex items-start gap-2">
+              <span class="text-indigo-400 mt-0.5">&#8226;</span>
+              Ask about your business offerings and services
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-indigo-400 mt-0.5">&#8226;</span>
+              Check if it correctly references your website content
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-indigo-400 mt-0.5">&#8226;</span>
+              Try common customer questions to test tone and accuracy
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bg-gray-900/50 border border-white/5 rounded-2xl overflow-hidden">
+        <div class="chat-header rounded-t-2xl">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 bg-indigo-500/30 rounded-lg flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="20" height="20" fill="none">
+                <defs><linearGradient id="hg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#a5b4fc"/><stop offset="100%" stop-color="#c4b5fd"/></linearGradient></defs>
+                <circle cx="40" cy="8" r="5" fill="url(#hg)"/><rect x="38" y="12" width="4" height="8" rx="2" fill="url(#hg)"/>
+                <rect x="8" y="18" width="64" height="48" rx="18" fill="url(#hg)"/><rect x="16" y="25" width="48" height="34" rx="12" fill="#1e1b4b"/>
+                <ellipse cx="30" cy="38" rx="6" ry="7" fill="white"/><ellipse cx="50" cy="38" rx="6" ry="7" fill="white"/>
+                <circle cx="30" cy="38" r="3" fill="#6366f1"/><circle cx="50" cy="38" r="3" fill="#6366f1"/>
+                <path d="M28 52 Q40 62 52 52" stroke="#a5b4fc" stroke-width="3" fill="none" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div>
+              <div class="font-semibold text-sm" id="botName">AI Assistant</div>
+              <div class="text-xs text-white/60">Online</div>
+            </div>
+          </div>
+        </div>
+        <div class="chat-messages" id="chatMessages" style="height:340px;">
+          <div class="welcome-message" id="welcomeMessage">
+            <div class="flex flex-col items-center gap-3 py-8">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="40" height="40" fill="none">
+                <defs><linearGradient id="wg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#8b5cf6"/></linearGradient></defs>
+                <circle cx="40" cy="8" r="5" fill="url(#wg)"/><rect x="38" y="12" width="4" height="8" rx="2" fill="url(#wg)"/>
+                <rect x="8" y="18" width="64" height="48" rx="18" fill="url(#wg)"/><rect x="16" y="25" width="48" height="34" rx="12" fill="#1e1b4b"/>
+                <ellipse cx="30" cy="38" rx="6" ry="7" fill="white"/><ellipse cx="50" cy="38" rx="6" ry="7" fill="white"/>
+                <circle cx="30" cy="38" r="3" fill="#6366f1"/><circle cx="50" cy="38" r="3" fill="#6366f1"/>
+                <path d="M28 52 Q40 62 52 52" stroke="#a5b4fc" stroke-width="3" fill="none" stroke-linecap="round"/>
+              </svg>
+              <p class="text-gray-400 text-sm">Loading your chatbot...</p>
+            </div>
+          </div>
+        </div>
+        <div class="chat-input-container">
+          <textarea class="chat-input" id="chatInput" placeholder="Type a test message..." rows="1" onkeydown="handleKeyDown(event)"></textarea>
+          <button class="send-button" id="sendButton" onclick="sendMessage()" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="llm-chat-widget" style="display:none;">
+    <div class="chat-window" id="chatWindow">
+      <div class="chat-header">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 bg-indigo-500/30 rounded-lg flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="18" height="18" fill="none">
+              <defs><linearGradient id="fg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#a5b4fc"/><stop offset="100%" stop-color="#c4b5fd"/></linearGradient></defs>
+              <circle cx="40" cy="8" r="5" fill="url(#fg)"/><rect x="38" y="12" width="4" height="8" rx="2" fill="url(#fg)"/>
+              <rect x="8" y="18" width="64" height="48" rx="18" fill="url(#fg)"/><rect x="16" y="25" width="48" height="34" rx="12" fill="#1e1b4b"/>
+              <ellipse cx="30" cy="38" rx="6" ry="7" fill="white"/><ellipse cx="50" cy="38" rx="6" ry="7" fill="white"/>
+              <circle cx="30" cy="38" r="3" fill="#6366f1"/><circle cx="50" cy="38" r="3" fill="#6366f1"/>
+              <path d="M28 52 Q40 62 52 52" stroke="#a5b4fc" stroke-width="3" fill="none" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div>
+            <div class="font-semibold text-sm" id="fbName">AI Assistant</div>
+            <div class="text-xs text-white/60">Online</div>
+          </div>
+        </div>
+        <button class="close-button" onclick="toggleChat()">&times;</button>
+      </div>
+      <div class="chat-messages" id="fbMessages">
+        <div class="welcome-message">Open the chat to start testing!</div>
+      </div>
+      <div class="chat-input-container">
+        <textarea class="chat-input" placeholder="Type a message..." rows="1" style="background:#111827;"></textarea>
+        <button class="send-button" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);" disabled>&#9658;</button>
+      </div>
+    </div>
+    <div class="chat-button" onclick="toggleChat()">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="28" height="28" fill="none">
+        <defs>
+          <linearGradient id="cbg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#fff"/><stop offset="100%" stop-color="#e0e7ff"/>
+          </linearGradient>
+        </defs>
+        <circle cx="40" cy="8" r="5" fill="url(#cbg)"/><rect x="38" y="12" width="4" height="8" rx="2" fill="url(#cbg)"/>
+        <rect x="8" y="18" width="64" height="48" rx="18" fill="url(#cbg)"/><rect x="16" y="25" width="48" height="34" rx="12" fill="#1e1b4b" opacity="0.8"/>
+        <ellipse cx="30" cy="38" rx="6" ry="7" fill="#1e1b4b"/><ellipse cx="50" cy="38" rx="6" ry="7" fill="#1e1b4b"/>
+        <circle cx="30" cy="38" r="3" fill="url(#cbg)"/><circle cx="50" cy="38" r="3" fill="url(#cbg)"/>
+        <path d="M28 52 Q40 62 52 52" stroke="url(#cbg)" stroke-width="3" fill="none" stroke-linecap="round"/>
+      </svg>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = window.location.origin;
+    let TENANT_ID = null;
+    let SESSION_ID = null;
+    let isFloatingOpen = false;
+
+    async function initWidget() {
+      const params = new URLSearchParams(window.location.search);
+      const tenantIdParam = params.get('tenant_id');
+
+      if (tenantIdParam) {
+        TENANT_ID = tenantIdParam;
+        try {
+          const resp = await fetch(`${API_BASE}/api/tenants/${TENANT_ID}/config`);
+          if (resp.ok) {
+            const t = await resp.json();
+            document.getElementById('botName').textContent = t.name || 'AI Assistant';
+            document.getElementById('fbName').textContent = t.name || 'AI Assistant';
+            document.getElementById('pageTenantName').textContent = t.name || 'Chatbot Test';
+            showWelcome(t.welcome_message || 'Hello! How can I help you today?');
+          } else {
+            showWelcome('Hello! How can I help you today?');
+          }
+        } catch (e) {
+          showWelcome('Hello! How can I help you today?');
+        }
+      }
+    }
+
+    function showWelcome(msg) {
+      const el = document.getElementById('welcomeMessage');
+      if (el) el.innerHTML = `<p class="text-gray-400 text-sm">${msg}</p><p class="text-xs text-gray-600 mt-1">Type a message below to test your chatbot</p>`;
+    }
+
+    function toggleChat() {
+      isFloatingOpen = !isFloatingOpen;
+      document.getElementById('chatWindow').classList.toggle('open', isFloatingOpen);
+    }
+
+    function handleKeyDown(e) {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById('chatInput');
+      const msg = input.value.trim();
+      if (!msg || !TENANT_ID) return;
+      input.value = '';
+      addMessage(msg, 'user');
+      setTyping();
+      try {
+        const resp = await fetch(`${API_BASE}/api/tenants/${TENANT_ID}/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: msg, session_id: SESSION_ID })
+        });
+        const text = await resp.text();
+        if (!resp.ok) throw new Error(JSON.parse(text).detail || 'Error');
+        const data = JSON.parse(text);
+        SESSION_ID = data.session_id;
+        removeTyping();
+        addMessage(data.content || data.response || 'Got response', 'assistant');
+      } catch (err) {
+        removeTyping();
+        addMessage('Sorry, I am facing a temporary issue right now. Please try again shortly.', 'assistant');
+      }
+    }
+
+    function addMessage(content, role) {
+      const el = document.getElementById('chatMessages');
+      const d = document.createElement('div');
+      d.className = `message ${role}`;
+      d.textContent = content;
+      el.appendChild(d);
+      el.scrollTop = el.scrollHeight;
+    }
+
+    function setTyping() {
+      const el = document.getElementById('chatMessages');
+      const t = document.createElement('div');
+      t.className = 'typing-indicator';
+      t.id = 'typingIndicator';
+      t.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+      el.appendChild(t);
+      el.scrollTop = el.scrollHeight;
+      document.getElementById('sendButton').disabled = true;
+    }
+
+    function removeTyping() {
+      const t = document.getElementById('typingIndicator');
+      if (t) t.remove();
+      document.getElementById('sendButton').disabled = false;
+    }
+
+    document.getElementById('chatInput').addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = (this.scrollHeight) + 'px';
+    });
+
+    initWidget();
+  </script>
+</body>
+</html>

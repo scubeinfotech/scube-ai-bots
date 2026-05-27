@@ -1,0 +1,2564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title x-text="tenantName ? tenantName + ' — AI Chatbot' : 'Dashboard — AI Chatbot'">Dashboard — AI Chatbot</title>
+    <script>if(localStorage.getItem('theme')==='light')document.documentElement.setAttribute('data-theme','light')</script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/theme.css">
+    <style>
+        [x-cloak] { display: none !important; }
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar-item { transition: all 0.15s; }
+        .sidebar-item:hover { background: rgba(255,255,255,0.08); }
+        .sidebar-item.active { background: rgba(99,102,241,0.2); color: #a5b4fc; border-right: 3px solid #6366f1; }
+        .card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; }
+        .metric-card { background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1)); border: 1px solid rgba(99,102,241,0.2); }
+        .btn-primary { background: linear-gradient(135deg, #6366f1, #8b5cf6); transition: all 0.2s; }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(99,102,241,0.3); }
+        .input-field { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; }
+        .input-field:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.2); }
+        select option { background: #1e293b; color: #fff; }
+        .tab-btn { transition: all 0.15s; }
+        .tab-btn:hover { color: #a5b4fc; }
+        .tab-btn.active { color: #6366f1; border-bottom: 2px solid #6366f1; }
+        .code-block { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; font-family: 'Courier New', monospace; }
+        .toast { animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .spinner { border: 3px solid rgba(255,255,255,0.3); border-top: 3px solid white; border-radius: 50%; width: 20px; height: 20px; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-gray-950 text-white min-h-screen" x-data="tenantDashboard()" x-init="init()">
+
+    <!-- Toast Notification -->
+    <div x-show="toast.show" x-transition class="fixed top-4 right-4 z-50 toast">
+        <div class="px-4 py-3 rounded-lg shadow-lg text-sm font-medium"
+             :class="toast.type === 'success' ? 'bg-green-600' : toast.type === 'warning' ? 'bg-amber-600' : 'bg-red-600'"
+             x-text="toast.message"></div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div x-show="authenticated" x-cloak class="flex min-h-screen">
+
+        <!-- Sidebar -->
+        <aside class="w-64 bg-gray-900 border-r border-white/5 flex flex-col">
+            <!-- Logo -->
+            <div class="p-3 border-b border-white/5 bg-white">
+                <div class="flex items-center justify-center mb-2">
+                    <img src="/static/logo.svg" alt="Dashboard" class="h-14 w-auto">
+                </div>
+                <div class="flex items-center justify-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                    <span class="text-[10px] font-semibold text-indigo-600 uppercase tracking-widest">Dashboard</span>
+                </div>
+            </div>
+
+            <!-- Nav -->
+            <nav class="flex-1 py-4">
+                <a @click.prevent="activeTab = 'overview'" :class="{ 'active': activeTab === 'overview' }" class="sidebar-item flex items-center gap-3 px-5 py-3 text-sm cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 10l2-2m12-6l2 2m0-10l-2-2"/></svg>
+                    Overview
+                </a>
+                <a @click.prevent="activeTab = 'channels'" :class="{ 'active': activeTab === 'channels' }" class="sidebar-item flex items-center gap-3 px-5 py-3 text-sm cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.858 15.355-5.858 21.213 0"/></svg>
+                    Channels
+                </a>
+                <a @click.prevent="activeTab = 'conversations'" :class="{ 'active': activeTab === 'conversations' }" class="sidebar-item flex items-center gap-3 px-5 py-3 text-sm cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.026 3 11c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                    Conversations
+                </a>
+                <a @click.prevent="activeTab = 'crm'; loadCRM()" :class="{ 'active': activeTab === 'crm' }" class="sidebar-item flex items-center gap-3 px-5 py-3 text-sm cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                    CRM
+                </a>
+                <a @click.prevent="activeTab = 'calendar'" :class="{ 'active': activeTab === 'calendar' }" class="sidebar-item flex items-center gap-3 px-5 py-3 text-sm cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    Calendar
+                </a>
+                <a @click.prevent="activeTab = 'billing'" :class="{ 'active': activeTab === 'billing' }" class="sidebar-item flex items-center gap-3 px-5 py-3 text-sm cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                    Billing
+                </a>
+                <a @click.prevent="activeTab = 'settings'" :class="{ 'active': activeTab === 'settings' }" class="sidebar-item flex items-center gap-3 px-5 py-3 text-sm cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    Settings
+                </a>
+            </nav>
+
+            <!-- Trial Badge -->
+            <div class="p-4 border-t border-white/5">
+                <div class="card p-3">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-xs text-gray-400">Free Trial</span>
+                        <span class="text-xs font-semibold text-green-400" x-text="trialDays + ' days left'"></span>
+                    </div>
+                    <div class="w-full bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                        <div class="bg-green-500 h-1.5 rounded-full transition-all duration-300"
+                             :style="'width: ' + Math.min(100, Math.max(0, (trialDays / 7 * 100))) + '%'">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logout -->
+            <div class="p-4 border-t border-white/5">
+                <button @click="logout()" class="w-full flex items-center gap-2 text-sm text-gray-400 hover:text-white transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                    Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-y-auto">
+            <!-- Top Bar -->
+            <header class="border-b px-8 py-4" :class="theme === 'dark' ? 'border-white/5' : 'border-gray-200'">
+                <div class="flex items-center justify-between mb-2">
+                    <h1 class="text-xl font-semibold" x-text="tabTitle"></h1>
+                    <div class="flex items-center gap-4">
+                        <button @click="toggleTheme()" class="p-1.5 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition" title="Toggle theme">
+                            <svg x-show="theme === 'dark'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                            <svg x-show="theme === 'light'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                        </button>
+                        <span class="text-sm text-gray-400" x-text="tenantName"></span>
+                        <div class="relative">
+                            <div @click="profileOpen = !profileOpen" class="w-8 h-8 bg-indigo-500/20 rounded-full flex items-center justify-center text-sm font-semibold text-indigo-400 cursor-pointer select-none" :class="{ 'ring-2 ring-indigo-400': profileOpen }" x-text="tenantName.charAt(0)"></div>
+                            <div x-show="profileOpen" @click.outside="profileOpen = false" x-cloak class="absolute right-0 mt-2 w-56 rounded-lg shadow-xl z-50 overflow-hidden" :class="theme === 'dark' ? 'bg-gray-900 border border-white/10' : 'bg-white border border-gray-200'">
+                                <div class="px-4 py-3 border-b" :class="theme === 'dark' ? 'border-white/10' : 'border-gray-200'">
+                                    <p class="text-sm font-medium" :class="theme === 'dark' ? 'text-white' : 'text-gray-900'" x-text="tenantName"></p>
+                                    <p class="text-xs" :class="theme === 'dark' ? 'text-gray-400' : 'text-gray-500'">Tenant</p>
+                                </div>
+                                <div class="py-1">
+                                    <button @click="profileOpen = false; showChangePassword = true" class="w-full text-left px-4 py-2 text-sm flex items-center gap-2" :class="theme === 'dark' ? 'text-gray-300 hover:bg-white/5 hover:text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                                        Change Password
+                                    </button>
+                                    <button @click="logout()" class="w-full text-left px-4 py-2 text-sm flex items-center gap-2" :class="theme === 'dark' ? 'text-gray-300 hover:bg-white/5 hover:text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                                        Sign Out
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between">
+                    <div class="text-sm text-gray-400">
+                        <span x-text="tenantName || 'Your Company'"></span> Dashboard
+                    </div>
+                    <div class="text-xs text-gray-500">
+                        Powered by <a href="https://scubeinfotech.com.sg" target="_blank" class="text-indigo-400 hover:text-indigo-300 underline">SCUBE INFOTECH Pte Ltd. Singapore</a>
+                    </div>
+                </div>
+            </header>
+
+            <div class="p-8">
+
+                <!-- ========== OVERVIEW TAB ========== -->
+                <div x-show="activeTab === 'overview'" x-transition>
+                    <!-- Missing Website Banner (kept but smaller) -->
+                    <div x-show="needsWebsite" class="mb-5 p-3 bg-amber-500/15 border border-amber-500/30 rounded-lg">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+                            <span class="text-sm text-amber-300">Set your website URL in</span>
+                            <button @click="activeTab = 'settings'" class="text-amber-400 underline text-sm">Settings</button>
+                            <span class="text-sm text-amber-300">to enable knowledge base crawling.</span>
+                        </div>
+                    </div>
+
+                    <!-- Welcome -->
+                    <div class="mb-6">
+                        <h2 class="text-xl font-semibold" x-text="'Welcome back' + (tenantName ? ', ' + tenantName : '')"></h2>
+                        <p class="text-sm text-gray-500">Your business performance at a glance</p>
+                    </div>
+
+                    <!-- Key Metrics -->
+                    <div class="grid grid-cols-4 gap-4 mb-6">
+                        <div class="card p-4">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-xs text-gray-500 uppercase tracking-wide">Total Leads</span>
+                                <span class="text-xs text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded">all time</span>
+                            </div>
+                            <div class="text-2xl font-bold" x-text="(crmStats?.total_leads || '—')"></div>
+                            <div class="text-xs text-gray-500 mt-1">
+                                <span x-text="crmStats?.leads_today ? crmStats.leads_today + ' today' : ''"></span>
+                            </div>
+                        </div>
+                        <div class="card p-4">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-xs text-gray-500 uppercase tracking-wide">Confirmed</span>
+                                <span class="text-xs text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded">booked</span>
+                            </div>
+                            <div class="text-2xl font-bold text-green-400" x-text="(crmStats?.confirmed_leads || '—')"></div>
+                        </div>
+                        <div class="card p-4">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-xs text-gray-500 uppercase tracking-wide">Est. Revenue</span>
+                                <span class="text-xs text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">@ $200/lead</span>
+                            </div>
+                            <div class="text-2xl font-bold text-emerald-400" x-text="crmStats?.estimated_revenue ? '$' + crmStats.estimated_revenue.toLocaleString() : '—'"></div>
+                        </div>
+                        <div class="card p-4">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-xs text-gray-500 uppercase tracking-wide">Conversion</span>
+                                <span class="text-xs text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded">rate</span>
+                            </div>
+                            <div class="text-2xl font-bold text-blue-400" x-text="crmStats?.conversion_rate ? crmStats.conversion_rate + '%' : '—'"></div>
+                        </div>
+                    </div>
+
+                    <!-- Active Conversations & Messages -->
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div class="card p-4">
+                            <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">Messages (30d)</div>
+                            <div class="text-xl font-semibold" x-text="(stats?.messages || 0).toLocaleString()"></div>
+                        </div>
+                        <div class="card p-4">
+                            <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">Active Chats (30d)</div>
+                            <div class="text-xl font-semibold" x-text="(stats?.sessions || 0).toLocaleString()"></div>
+                        </div>
+                    </div>
+
+                    <!-- Upcoming Appointments -->
+                    <div class="card p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-semibold">Upcoming Appointments</h3>
+                            <span class="text-xs text-gray-500" x-text="'Next ' + appointments.length"></span>
+                        </div>
+
+                        <div x-show="loadingAppointments" class="text-center py-6 text-gray-500">
+                            <div class="spinner mx-auto mb-2"></div>
+                            Loading...
+                        </div>
+
+                        <div x-show="!loadingAppointments && appointments.length === 0" class="text-center py-8 text-gray-500">
+                            <svg class="w-10 h-10 mx-auto mb-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            <p>No upcoming appointments</p>
+                            <p class="text-xs mt-1">Confirmed bookings will appear here.</p>
+                        </div>
+
+                        <div x-show="!loadingAppointments && appointments.length > 0" class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="text-gray-500 text-xs uppercase border-b border-white/5">
+                                        <th class="text-left py-2 pr-3 font-medium">Time</th>
+                                        <th class="text-left py-2 px-3 font-medium">Status</th>
+                                        <th class="text-left py-2 px-3 font-medium">Date</th>
+                                        <th class="text-left py-2 px-3 font-medium">Person</th>
+                                        <th class="text-left py-2 pl-3 font-medium">Location / Service</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template x-for="apt in appointments" :key="apt.id">
+                                        <tr class="border-b border-white/5 hover:bg-white/5">
+                                            <td class="py-2.5 pr-3 font-mono text-xs" x-text="apt.time || '—'"></td>
+                                            <td class="py-2.5 px-3">
+                                                <span x-show="apt.status === 'confirmed'" class="text-green-400 text-xs font-medium bg-green-500/10 px-2 py-0.5 rounded">Confirmed</span>
+                                                <span x-show="apt.status === 'tentative'" class="text-amber-400 text-xs font-medium bg-amber-500/10 px-2 py-0.5 rounded">Tentative</span>
+                                            </td>
+                                            <td class="py-2.5 px-3 text-xs" x-text="apt.date || '—'"></td>
+                                            <td class="py-2.5 px-3">
+                                                <div x-text="apt.person_name || '—'" class="font-medium"></div>
+                                                <div class="text-xs text-gray-500" x-show="apt.person_phone" x-text="apt.person_phone"></div>
+                                            </td>
+                                            <td class="py-2.5 pl-3 text-xs" x-text="apt.location_type || '—'"></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========== CHANNELS TAB ========== -->
+                <div x-show="activeTab === 'channels'" x-transition>
+                    <!-- Chatbot Channel -->
+                    <div class="card p-6 mb-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-indigo-500/20 rounded-lg flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.026 3 11c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold">Website Chatbot</h3>
+                                    <p class="text-sm text-gray-400">Embed on any website</p>
+                                </div>
+                            </div>
+                            <span class="px-3 py-1 bg-green-500/20 text-green-400 text-xs font-semibold rounded-full">Active</span>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                Embed Code
+                                <a href="#" @click.prevent="showHelp = !showHelp" class="ml-2 text-indigo-400 hover:text-indigo-300 text-xs font-normal">
+                                    How to add?
+                                </a>
+                            </label>
+                            <div class="code-block p-4 text-sm relative">
+                                <pre class="text-gray-300 whitespace-pre-wrap" x-text="embedCode"></pre>
+                                <button @click="copyEmbedCode()" class="absolute top-2 right-2 px-3 py-1 bg-indigo-500/20 text-indigo-400 text-xs rounded hover:bg-indigo-500/30 transition">Copy</button>
+                            </div>
+                            <div x-show="showHelp" x-transition class="mt-3 p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-sm text-gray-300">
+                                <p class="font-medium text-indigo-300 mb-1">How to add the chatbot to your website:</p>
+                                <ol class="list-decimal list-inside space-y-1 text-gray-400">
+                                    <li>Copy the embed code above using the <strong>Copy</strong> button</li>
+                                    <li>Open your website's HTML file (e.g. <code class="text-gray-300">index.html</code>)</li>
+                                    <li>Paste it just before the closing <code class="text-gray-300">&lt;/body&gt;</code> tag</li>
+                                    <li>Save and upload the file to your web server</li>
+                                    <li>The chatbot will appear on your site within seconds</li>
+                                </ol>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-4 text-sm text-gray-400">
+                            <span>API Key:</span>
+                            <code class="text-gray-300" x-text="apiKey ? apiKey.substring(0, 20) + '...' : 'Loading...'"></code>
+                            <button @click="showApiKey = !showApiKey" class="text-indigo-400 hover:text-indigo-300">
+                                <span x-text="showApiKey ? 'Hide' : 'Show'"></span>
+                            </button>
+                        </div>
+                        <div x-show="showApiKey" class="mt-2">
+                            <code class="code-block p-3 text-sm text-gray-300 block" x-text="apiKey"></code>
+                        </div>
+                    </div>
+
+                    <!-- WhatsApp Channel -->
+                    <div class="card p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold">WhatsApp Business</h3>
+                                    <p class="text-sm text-gray-400">Connect your WhatsApp Business API</p>
+                                </div>
+                            </div>
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5"
+                                  :class="whatsappConfigured ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'">
+                                <span x-show="whatsappConfigured" class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
+                                <span x-text="whatsappConfigured ? 'Connected' : 'Not Connected'"></span>
+                            </span>
+                            <a href="#" @click.prevent="showWAHelp = true" class="text-indigo-400 hover:text-indigo-300 text-xs shrink-0 ml-2">Setup Guide</a>
+                        </div>
+
+                        <!-- Not Configured -->
+                        <div x-show="!whatsappConfigured" class="space-y-4">
+                            <!-- Provider Toggle -->
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">Select Provider</label>
+                                <div class="flex gap-2">
+                                    <button @click="waProvider = 'meta'"
+                                        class="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition"
+                                        :class="waProvider === 'meta' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10'">
+                                        <span class="block font-semibold">Meta</span>
+                                        <span class="text-xs opacity-70">Direct WhatsApp Cloud API</span>
+                                    </button>
+                                    <button @click="waProvider = 'msg91'"
+                                        class="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition"
+                                        :class="waProvider === 'msg91' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10'">
+                                        <span class="block font-semibold">MSG91</span>
+                                        <span class="text-xs opacity-70">MSG91 WhatsApp API</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Meta Fields -->
+                            <div x-show="waProvider === 'meta'" class="space-y-4">
+                                <div class="grid md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs text-gray-400 mb-1">Phone Number ID</label>
+                                        <input type="text" x-model="waConfig.phone_number_id" placeholder="e.g., 123456789" class="input-field w-full px-3 py-2 text-sm text-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-gray-400 mb-1">Business Account ID</label>
+                                        <input type="text" x-model="waConfig.business_account_id" placeholder="e.g., 987654321" class="input-field w-full px-3 py-2 text-sm text-white">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-400 mb-1">Access Token</label>
+                                    <input type="password" x-model="waConfig.access_token" placeholder="EAA..." class="input-field w-full px-3 py-2 text-sm text-white">
+                                </div>
+                            </div>
+
+                            <!-- MSG91 Fields -->
+                            <div x-show="waProvider === 'msg91'" class="space-y-4">
+                                <div>
+                                    <label class="block text-xs text-gray-400 mb-1">MSG91 Auth Key</label>
+                                    <input type="password" x-model="waConfig.msg91_auth_key" placeholder="Your MSG91 authentication key" class="input-field w-full px-3 py-2 text-sm text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-400 mb-1">Integrated Number</label>
+                                    <input type="text" x-model="waConfig.msg91_integrated_number" placeholder="Your MSG91 WhatsApp number" class="input-field w-full px-3 py-2 text-sm text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-400 mb-1">API Endpoint URL</label>
+                                    <input type="url" x-model="waConfig.msg91_api_endpoint" placeholder="https://control.msg91.com/api/v5/whatsapp/whatsapp-outbound-message/" class="input-field w-full px-3 py-2 text-sm text-white">
+                                    <p class="text-xs text-gray-500 mt-1">Leave blank to use MSG91 default endpoint</p>
+                                </div>
+                            </div>
+
+                            <!-- Webhook URL + Verify Token (both providers) -->
+                            <div class="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl space-y-3">
+                                <p class="text-xs text-indigo-300 font-medium">Webhook Configuration — copy these into your provider dashboard</p>
+                                <div>
+                                    <label class="block text-xs text-gray-400 mb-1">Callback / Webhook URL</label>
+                                    <div class="flex gap-2">
+                                        <code class="flex-1 code-block p-2 text-xs text-gray-300 truncate" x-text="`${window.location.origin}/api/whatsapp/webhook/${tenantId}`"></code>
+                                        <button @click="copyText(`${window.location.origin}/api/whatsapp/webhook/${tenantId}`)" class="px-3 py-1 bg-indigo-500/20 text-indigo-400 text-xs rounded hover:bg-indigo-500/30 transition shrink-0">Copy</button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-400 mb-1">Verify Token</label>
+                                    <div class="flex gap-2">
+                                        <code class="flex-1 code-block p-2 text-xs text-gray-300" x-text="'scube_wa_verify_2024'"></code>
+                                        <button @click="copyText('scube_wa_verify_2024')" class="px-3 py-1 bg-indigo-500/20 text-indigo-400 text-xs rounded hover:bg-indigo-500/30 transition shrink-0">Copy</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Instructions -->
+                            <div x-show="waProvider === 'meta'" class="p-4 bg-white/5 rounded-xl text-xs text-gray-400 space-y-1">
+                                <p class="text-gray-300 font-medium mb-1">How to connect Meta WhatsApp:</p>
+                                <p>1. Go to <a href="https://developers.facebook.com" target="_blank" class="text-indigo-400 hover:underline">Meta for Developers</a> → Your App → WhatsApp</p>
+                                <p>2. Copy <strong>Phone Number ID</strong> and <strong>Business Account ID</strong> from the dashboard</p>
+                                <p>3. Generate a permanent <strong>Access Token</strong> from the System User page</p>
+                                <p>4. Set the <strong>Callback URL</strong> above in your Meta app's Webhook settings</p>
+                                <p>5. Set the <strong>Verify Token</strong> above in your Meta app's Webhook settings</p>
+                                <p>6. Click <strong>Connect WhatsApp</strong> below</p>
+                            </div>
+                            <div x-show="waProvider === 'msg91'" class="p-4 bg-white/5 rounded-xl text-xs text-gray-400 space-y-1">
+                                <p class="text-gray-300 font-medium mb-1">How to connect MSG91:</p>
+                                <p>1. Go to <a href="https://control.msg91.com" target="_blank" class="text-indigo-400 hover:underline">MSG91 Dashboard</a> → WhatsApp</p>
+                                <p>2. Copy your <strong>Auth Key</strong> from Settings → API Keys</p>
+                                <p>3. Copy your <strong>Integrated Number</strong> from your WhatsApp sender profile</p>
+                                <p>4. Set the <strong>Callback URL</strong> above in MSG91's WhatsApp webhook settings</p>
+                                <p>5. Set the <strong>Verify Token</strong> above in MSG91's WhatsApp webhook settings</p>
+                                <p>6. Click <strong>Connect WhatsApp</strong> below</p>
+                            </div>
+
+                            <!-- Response Controls (preview) -->
+                            <div class="grid md:grid-cols-3 gap-4 p-4 bg-white/5 rounded-xl">
+                                <div>
+                                    <label class="block text-xs text-gray-400 mb-1">Response Length</label>
+                                    <select x-model="waConfig.response_target_chars" class="input-field w-full px-3 py-2 text-sm text-white">
+                                        <option value="200">Short (200 chars)</option>
+                                        <option value="300" selected>Standard (300 chars)</option>
+                                        <option value="500">Detailed (500 chars)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-400 mb-1">Rate Limit (msgs/min)</label>
+                                    <input type="number" x-model="waConfig.rate_limit_max_per_minute" min="1" max="20" class="input-field w-full px-3 py-2 text-sm text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-400 mb-1">Cooldown (seconds)</label>
+                                    <input type="number" x-model="waConfig.cooldown_seconds" min="0" max="30" class="input-field w-full px-3 py-2 text-sm text-white">
+                                </div>
+                            </div>
+
+                            <button @click="saveWhatsAppConfig()" class="btn-primary px-5 py-2.5 rounded-lg text-sm font-medium text-white">Connect WhatsApp</button>
+                        </div>
+
+                        <!-- Configured -->
+                        <div x-show="whatsappConfigured && !waEditing" class="space-y-3">
+                            <!-- Connection Status -->
+                            <div class="p-4 bg-gradient-to-r from-green-500/10 to-indigo-500/10 border border-green-500/20 rounded-xl text-sm">
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-2 h-2 rounded-full animate-pulse" 
+                                              :class="{
+                                                  'bg-green-400': waStatus.connection_status === 'connected',
+                                                  'bg-red-400': waStatus.connection_status === 'error',
+                                                  'bg-yellow-400': waStatus.connection_status === 'disconnected'
+                                              }"></span>
+                                        <p class="font-semibold" 
+                                           :class="{
+                                               'text-green-300': waStatus.connection_status === 'connected',
+                                               'text-red-300': waStatus.connection_status === 'error',
+                                               'text-yellow-300': waStatus.connection_status === 'disconnected'
+                                           }" 
+                                           x-text="waStatus.connection_status === 'connected' ? (waProvider === 'msg91' ? 'MSG91 Connected' : 'Meta Connected') : 
+                                                   waStatus.connection_status === 'error' ? 'Connection Error' : 'Not Connected'"></p>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <button @click="testWhatsAppConnection()" 
+                                                :disabled="waTesting"
+                                                class="text-xs px-3 py-1 bg-white/10 rounded hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1">
+                                            <svg x-show="!waTesting" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                                            <svg x-show="waTesting" class="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                            <span x-text="waTesting ? 'Testing...' : 'Test'"></span>
+                                        </button>
+                                        <button @click="showSensitiveValues = !showSensitiveValues" class="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1">
+                                            <svg x-show="!showSensitiveValues" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                            <svg x-show="showSensitiveValues" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
+                                            <span x-text="showSensitiveValues ? 'Hide' : 'Show'"></span>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Status Details -->
+                                <div x-show="waStatus.last_test" class="text-xs text-gray-400 mb-2">
+                                    Last test: <span x-text="formatDateTime(waStatus.last_test)"></span>
+                                    <span x-show="waStatus.messages_today > 0" class="ml-3">
+                                        Messages today: <span x-text="waStatus.messages_today"></span>
+                                    </span>
+                                    <span x-show="waStatus.response_rate > 0" class="ml-3">
+                                        Response rate: <span x-text="waStatus.response_rate.toFixed(1)"></span>%
+                                    </span>
+                                </div>
+                                
+                                <!-- Test Result -->
+                                <div x-show="waTestResult" class="p-2 rounded text-xs mb-2"
+                                     :class="{
+                                         'bg-green-500/20 text-green-300': waTestResult && waTestResult.success,
+                                         'bg-red-500/20 text-red-300': waTestResult && !waTestResult.success
+                                     }">
+                                    <p x-text="waTestResult && waTestResult.message"></p>
+                                    <p x-show="waTestResult && waTestResult.details && waTestResult.details.latency_ms" class="text-xs opacity-70 mt-1">
+                                        Latency: <span x-text="waTestResult && waTestResult.details && waTestResult.details.latency_ms"></span>ms
+                                    </p>
+                                </div>
+                                
+                                <!-- MSG91-specific fields -->
+                                <div x-show="waProvider === 'msg91'" class="space-y-2">
+                                    <div class="flex justify-between items-center p-2 bg-white/5 rounded">
+                                        <span class="text-gray-400 text-xs">Integrated Number:</span>
+                                        <span class="text-gray-300 font-mono text-xs" x-text="waConfig.msg91_integrated_number || waConfig.phone_number_id || '-'"></span>
+                                    </div>
+                                    <div class="flex justify-between items-center p-2 bg-white/5 rounded">
+                                        <span class="text-gray-400 text-xs">Auth Key:</span>
+                                        <span class="text-gray-300 font-mono text-xs break-all" x-text="waConfig.msg91_auth_key ? (showSensitiveValues ? waConfig.msg91_auth_key : '••••' + waConfig.msg91_auth_key.slice(-4)) : '-'"></span>
+                                    </div>
+                                    <div class="flex justify-between items-center p-2 bg-white/5 rounded">
+                                        <span class="text-gray-400 text-xs">API Endpoint:</span>
+                                        <span class="text-gray-300 font-mono text-xs truncate max-w-[200px]" x-text="waConfig.msg91_api_endpoint || 'Default (MSG91)'"></span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Meta-specific fields -->
+                                <div x-show="waProvider === 'meta'" class="space-y-2">
+                                    <div class="flex justify-between items-center p-2 bg-white/5 rounded">
+                                        <span class="text-gray-400 text-xs">Phone Number ID:</span>
+                                        <span class="text-gray-300 font-mono text-xs" x-text="waConfig.phone_number_id ? waConfig.phone_number_id.substring(0, 15) + '...' : '-'"></span>
+                                    </div>
+                                    <div class="flex justify-between items-center p-2 bg-white/5 rounded">
+                                        <span class="text-gray-400 text-xs">Business Account ID:</span>
+                                        <span class="text-gray-300 font-mono text-xs" x-text="waConfig.business_account_id || '-'"></span>
+                                    </div>
+                                    <div class="flex justify-between items-center p-2 bg-white/5 rounded">
+                                        <span class="text-gray-400 text-xs">Access Token:</span>
+                                        <span class="text-gray-300 font-mono text-xs break-all" x-text="waConfig.access_token ? (showSensitiveValues ? waConfig.access_token : '••••' + waConfig.access_token.slice(-4)) : '-'"></span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Common webhook info -->
+                                <div class="mt-3 pt-3 border-t border-white/10 space-y-2">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-gray-400 text-xs">Webhook URL:</span>
+                                        <div class="flex items-center gap-2">
+                                            <code class="text-xs text-indigo-300 font-mono truncate max-w-[180px]" x-text="webhookUrl"></code>
+                                            <button @click="copyText(webhookUrl)" class="text-indigo-400 hover:text-indigo-300 text-xs">Copy</button>
+                                        </div>
+                                    </div>
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-gray-400 text-xs">Verify Token:</span>
+                                        <code class="text-xs text-indigo-300 font-mono" x-text="waConfig.webhook_verify_token || 'scube_wa_verify_2024'"></code>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <button @click="waEditing = true" class="px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-sm rounded-lg hover:bg-indigo-500/20 transition">Edit Configuration</button>
+                                <button @click="disconnectWhatsApp()" class="px-4 py-2 bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-lg hover:bg-red-500/20 transition">Disconnect</button>
+                            </div>
+                        </div>
+
+                        <!-- Edit Mode (Configured) -->
+                        <div x-show="whatsappConfigured && waEditing" class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-300 font-medium">Edit WhatsApp Configuration</span>
+                                <button @click="waEditing = false; loadWhatsAppConfig()" class="text-xs text-gray-400 hover:text-white transition">Cancel</button>
+                            </div>
+
+                            <!-- Provider Toggle -->
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">Select Provider</label>
+                                <div class="flex gap-2">
+                                    <button @click="waProvider = 'meta'"
+                                        class="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition"
+                                        :class="waProvider === 'meta' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10'">
+                                        <span class="block font-semibold">Meta</span>
+                                        <span class="text-xs opacity-70">Direct WhatsApp Cloud API</span>
+                                    </button>
+                                    <button @click="waProvider = 'msg91'"
+                                        class="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition"
+                                        :class="waProvider === 'msg91' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10'">
+                                        <span class="block font-semibold">MSG91</span>
+                                        <span class="text-xs opacity-70">MSG91 WhatsApp API</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Meta Fields -->
+                            <div x-show="waProvider === 'meta'" class="space-y-4">
+                                <div class="grid md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs text-gray-400 mb-1">Phone Number ID</label>
+                                        <input type="text" x-model="waConfig.phone_number_id" placeholder="e.g., 123456789" class="input-field w-full px-3 py-2 text-sm text-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-gray-400 mb-1">Business Account ID</label>
+                                        <input type="text" x-model="waConfig.business_account_id" placeholder="e.g., 987654321" class="input-field w-full px-3 py-2 text-sm text-white">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-400 mb-1">Access Token</label>
+                                    <input type="password" x-model="waConfig.access_token" placeholder="EAA..." class="input-field w-full px-3 py-2 text-sm text-white">
+                                </div>
+                            </div>
+
+                            <!-- MSG91 Fields -->
+                            <div x-show="waProvider === 'msg91'" class="space-y-4">
+                                <div>
+                                    <label class="block text-xs text-gray-400 mb-1">MSG91 Auth Key</label>
+                                    <input type="password" x-model="waConfig.msg91_auth_key" placeholder="Your MSG91 authentication key" class="input-field w-full px-3 py-2 text-sm text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-400 mb-1">Integrated Number</label>
+                                    <input type="text" x-model="waConfig.msg91_integrated_number" placeholder="Your MSG91 WhatsApp number" class="input-field w-full px-3 py-2 text-sm text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-400 mb-1">API Endpoint URL</label>
+                                    <input type="url" x-model="waConfig.msg91_api_endpoint" placeholder="https://control.msg91.com/api/v5/whatsapp/whatsapp-outbound-message/" class="input-field w-full px-3 py-2 text-sm text-white">
+                                    <p class="text-xs text-gray-500 mt-1">Leave blank to use MSG91 default endpoint</p>
+                                </div>
+                            </div>
+
+                            <!-- Response Controls -->
+                            <div class="border-t border-white/10 pt-4 mt-4">
+                                <p class="text-sm font-medium text-gray-300 mb-3">Response Controls</p>
+                                <div class="grid md:grid-cols-3 gap-4">
+                                    <div>
+                                        <label class="block text-xs text-gray-400 mb-1">Response Length</label>
+                                        <select x-model="waConfig.response_target_chars" class="input-field w-full px-3 py-2 text-sm text-white">
+                                            <option value="200">Short (200 chars)</option>
+                                            <option value="300">Standard (300 chars)</option>
+                                            <option value="500">Detailed (500 chars)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-gray-400 mb-1">Rate Limit (msgs/min)</label>
+                                        <input type="number" x-model="waConfig.rate_limit_max_per_minute" min="1" max="20" class="input-field w-full px-3 py-2 text-sm text-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-gray-400 mb-1">Cooldown (seconds)</label>
+                                        <input type="number" x-model="waConfig.cooldown_seconds" min="0" max="30" class="input-field w-full px-3 py-2 text-sm text-white">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex gap-3">
+                                <button @click="saveWhatsAppConfig()" class="btn-primary px-5 py-2.5 rounded-lg text-sm font-medium text-white">Save Changes</button>
+                                <button @click="activateWhatsApp()" 
+                                        x-show="whatsappConfigured && waStatus.connection_status === 'connected'"
+                                        class="px-5 py-2.5 rounded-lg text-sm font-medium bg-green-500 hover:bg-green-600 text-white">
+                                    🚀 Go Live
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- WhatsApp Setup Guide Modal -->
+                        <div x-show="showWAHelp" class="fixed inset-0 bg-black/95 backdrop-blur-sm flex items-center justify-center z-50" x-cloak>
+                            <div class="card p-6 w-full max-w-2xl mx-4 max-h-[85vh] overflow-y-auto">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="font-semibold text-lg">WhatsApp Setup Guide</h3>
+                                    <button @click="showWAHelp = false" class="text-gray-400 hover:text-white text-xl leading-none">&times;</button>
+                                </div>
+
+                                <div class="space-y-6 text-sm text-gray-300">
+                                    <!-- Overview -->
+                                    <div class="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl">
+                                        <p class="font-medium text-indigo-300 mb-1">How it works</p>
+                                        <p class="text-gray-400">When a customer sends a WhatsApp message to your number, Meta/MSG91 forwards it to our webhook URL. Our chatbot processes it through the LLM and sends a reply back via the provider's API.</p>
+                                    </div>
+
+                                    <!-- Two-Way Flow Summary -->
+                                    <div class="p-4 bg-green-500/10 border border-green-500/20 rounded-xl">
+                                        <p class="font-medium text-green-300 mb-2">🔄 What You Need (Summary)</p>
+                                        <div class="grid md:grid-cols-2 gap-3 text-xs">
+                                            <div class="p-3 bg-white/5 rounded-lg">
+                                                <p class="font-semibold text-white mb-1">📥 FROM Provider (MSG91/Meta)</p>
+                                                <ul class="text-gray-400 space-y-1 list-disc list-inside">
+                                                    <li><strong>Auth Key</strong> - for sending replies</li>
+                                                    <li><strong>Integrated/Phone Number</strong> - your WhatsApp number</li>
+                                                </ul>
+                                                <p class="text-gray-500 mt-2 italic">Enter these in the form below ↓</p>
+                                            </div>
+                                            <div class="p-3 bg-white/5 rounded-lg">
+                                                <p class="font-semibold text-white mb-1">📤 TO Provider (MSG91/Meta)</p>
+                                                <ul class="text-gray-400 space-y-1 list-disc list-inside">
+                                                    <li><strong>Webhook URL</strong> - for receiving messages</li>
+                                                    <li><strong>Verify Token</strong> - for security</li>
+                                                </ul>
+                                                <p class="text-gray-500 mt-2 italic">Copy these to your provider dashboard ↓</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Step 1: Choose Provider -->
+                                    <div>
+                                        <p class="font-semibold text-white mb-2">Step 1: Choose your WhatsApp Provider</p>
+                                        <p class="text-gray-400 mb-2">Decide which provider you want to use:</p>
+                                        <div class="grid md:grid-cols-2 gap-3">
+                                            <div class="p-3 bg-white/5 rounded-lg">
+                                                <p class="font-medium text-indigo-300">Meta (Cloud API)</p>
+                                                <p class="text-xs text-gray-400 mt-1">Direct integration with Meta's WhatsApp Cloud API. Best for businesses with a Meta Developer account.</p>
+                                            </div>
+                                            <div class="p-3 bg-white/5 rounded-lg">
+                                                <p class="font-medium text-indigo-300">MSG91</p>
+                                                <p class="text-xs text-gray-400 mt-1">Integration via MSG91 as intermediary. Best for businesses already using MSG91 for SMS/WhatsApp.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Step 2: Meta -->
+                                    <div>
+                                        <p class="font-semibold text-white mb-2">Step 2A: Prepare Meta Credentials</p>
+                                        <ol class="list-decimal list-inside space-y-1.5 text-gray-400">
+                                            <li>Go to <a href="https://developers.facebook.com" target="_blank" class="text-indigo-400 hover:underline">Meta for Developers</a></li>
+                                            <li>Create or open your App → <strong>WhatsApp</strong> product</li>
+                                            <li>From the dashboard, copy your <strong>Phone Number ID</strong> and <strong>Business Account ID</strong></li>
+                                            <li>Go to <strong>System User</strong> page, create a token with <code class="text-gray-300">whatsapp_business_messaging</code> and <code class="text-gray-300">whatsapp_business_management</code> permissions</li>
+                                            <li>Copy the generated <strong>Access Token</strong> (starts with <code class="text-gray-300">EAA...</code>)</li>
+                                        </ol>
+                                    </div>
+
+                                    <!-- Step 2B: MSG91 -->
+                                    <div>
+                                        <p class="font-semibold text-white mb-2">Step 2B: Prepare MSG91 Credentials</p>
+                                        <ol class="list-decimal list-inside space-y-1.5 text-gray-400">
+                                            <li>Go to <a href="https://control.msg91.com" target="_blank" class="text-indigo-400 hover:underline">MSG91 Dashboard</a> → WhatsApp section</li>
+                                            <li>Copy your <strong>Auth Key</strong> from Settings → API Keys</li>
+                                            <li>Copy your <strong>Integrated Number</strong> from your WhatsApp sender profile</li>
+                                            <li>Leave the <strong>API Endpoint URL</strong> as default unless MSG91 provides a custom one</li>
+                                        </ol>
+                                    </div>
+
+                                    <!-- Step 3: Enter Credentials -->
+                                    <div>
+                                        <p class="font-semibold text-white mb-2">Step 3: Enter Credentials in Our Dashboard</p>
+                                        <ol class="list-decimal list-inside space-y-1.5 text-gray-400">
+                                            <li>Select your provider (<strong>Meta</strong> or <strong>MSG91</strong>) using the toggle buttons</li>
+                                            <li>Paste the credentials into the corresponding input fields</li>
+                                            <li>Leave <strong>API Endpoint URL</strong> blank to use the default</li>
+                                        </ol>
+                                    </div>
+
+                                    <!-- Step 4: Webhook -->
+                                    <div>
+                                        <p class="font-semibold text-white mb-2">Step 4: Configure Webhook in Provider Dashboard</p>
+                                        <p class="text-gray-400 mb-2">Copy the following from the <strong>Webhook Configuration</strong> box in our dashboard:</p>
+
+                                        <div class="p-3 bg-white/5 rounded-lg mb-2">
+                                            <p class="text-xs font-medium text-gray-300">Callback / Webhook URL:</p>
+                                            <code class="text-xs text-indigo-300 break-all" x-text="`${window.location.origin}/api/whatsapp/webhook/${tenantId}`"></code>
+                                        </div>
+                                        <div class="p-3 bg-white/5 rounded-lg mb-2">
+                                            <p class="text-xs font-medium text-gray-300">Verify Token:</p>
+                                            <code class="text-xs text-indigo-300">scube_wa_verify_2024</code>
+                                        </div>
+
+                                        <p class="text-xs text-gray-500 mt-1">Paste these into the <strong>Webhook</strong> settings of your Meta App or MSG91 dashboard. Meta/MSG91 will send a verification GET request — our server verifies the token and responds with the challenge.</p>
+                                    </div>
+
+                                    <!-- Step 5: Configure Webhook in MSG91/Meta -->
+                                    <div>
+                                        <p class="font-semibold text-white mb-2">Step 5: Configure Webhook in Your Provider Dashboard</p>
+                                        <p class="text-gray-400 mb-3">Copy these exact values to your MSG91 or Meta dashboard:</p>
+                                        
+                                        <div class="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl space-y-3">
+                                            <!-- Webhook URL -->
+                                            <div>
+                                                <label class="block text-xs text-gray-300 mb-1">Callback / Webhook URL</label>
+                                                <div class="flex gap-2">
+                                                    <code class="flex-1 code-block p-2 text-xs text-indigo-300 break-all" x-text="`${window.location.origin}/api/whatsapp/webhook/${tenantId}`"></code>
+                                                    <button @click="copyText(`${window.location.origin}/api/whatsapp/webhook/${tenantId}`)" class="px-3 py-1 bg-indigo-500/20 text-indigo-400 text-xs rounded hover:bg-indigo-500/30 transition shrink-0">Copy</button>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Verify Token -->
+                                            <div>
+                                                <label class="block text-xs text-gray-300 mb-1">Verify Token</label>
+                                                <div class="flex gap-2">
+                                                    <code class="flex-1 code-block p-2 text-xs text-indigo-300" x-text="waConfig.webhook_verify_token || 'scube_wa_verify_2024'"></code>
+                                                    <button @click="copyText(waConfig.webhook_verify_token || 'scube_wa_verify_2024')" class="px-3 py-1 bg-indigo-500/20 text-indigo-400 text-xs rounded hover:bg-indigo-500/30 transition shrink-0">Copy</button>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Dynamic helper text based on provider -->
+                                            <div class="text-xs text-gray-500 mt-2">
+                                                <p x-show="waProvider === 'msg91'">
+                                                    <strong>For MSG91:</strong> Go to Dashboard → WhatsApp → Configuration → paste these values → Click "Verify & Save"
+                                                </p>
+                                                <p x-show="waProvider === 'meta'">
+                                                    <strong>For Meta:</strong> Go to developers.facebook.com → Your App → WhatsApp → Configuration → Webhooks → paste these values → Click "Verify & Save"
+                                                </p>
+                                                <p x-show="!waProvider">
+                                                    Select a provider in Step 1 to see specific instructions
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Step 6: Click Connect -->
+                                    <div>
+                                        <p class="font-semibold text-white mb-2">Step 6: Click Connect</p>
+                                        <p class="text-gray-400">After configuring the webhook in your provider dashboard, click the <strong>Connect WhatsApp</strong> button below. Our system will verify the connection and activate your WhatsApp chatbot.</p>
+                                    </div>
+
+                                    <!-- After Connect -->
+                                    <div class="p-4 bg-green-500/10 border border-green-500/20 rounded-xl">
+                                        <div class="flex items-center justify-between mb-3">
+                                            <p class="font-semibold text-green-300">✅ After Connecting - You'll See:</p>
+                                            <button @click="showSensitiveValues = !showSensitiveValues" class="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1">
+                                                <svg x-show="!showSensitiveValues" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                                <svg x-show="showSensitiveValues" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
+                                                <span x-text="showSensitiveValues ? 'Hide Values' : 'Show Values'"></span>
+                                            </button>
+                                        </div>
+                                        
+                                        <div class="space-y-2 text-xs">
+                                            <!-- Visual indicator -->
+                                            <div class="flex items-center gap-2 p-2 bg-white/5 rounded">
+                                                <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                                                <span class="text-gray-300 font-medium" x-text="waProvider === 'msg91' ? 'MSG91 Connected' : 'Meta Connected'"></span>
+                                            </div>
+                                            
+                                            <!-- Provider-specific summary -->
+                                            <div x-show="waProvider === 'msg91'" class="space-y-1">
+                                                <div class="flex justify-between p-2 bg-white/5 rounded">
+                                                    <span class="text-gray-400">Integrated Number:</span>
+                                                    <span class="text-gray-300 font-mono" x-text="waConfig.msg91_integrated_number || 'Not set'"></span>
+                                                </div>
+                                                <div class="flex justify-between p-2 bg-white/5 rounded">
+                                                    <span class="text-gray-400">Auth Key:</span>
+                                                    <span class="text-gray-300 font-mono break-all" x-text="waConfig.msg91_auth_key ? (showSensitiveValues ? waConfig.msg91_auth_key : '••••' + waConfig.msg91_auth_key.slice(-4)) : 'Not set'"></span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div x-show="waProvider === 'meta'" class="space-y-1">
+                                                <div class="flex justify-between p-2 bg-white/5 rounded">
+                                                    <span class="text-gray-400">Phone Number ID:</span>
+                                                    <span class="text-gray-300 font-mono truncate max-w-[200px]" x-text="waConfig.phone_number_id || 'Not set'"></span>
+                                                </div>
+                                                <div class="flex justify-between p-2 bg-white/5 rounded">
+                                                    <span class="text-gray-400">Access Token:</span>
+                                                    <span class="text-gray-300 font-mono break-all" x-text="waConfig.access_token ? (showSensitiveValues ? waConfig.access_token : '••••' + waConfig.access_token.slice(-4)) : 'Not set'"></span>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Common fields -->
+                                            <div class="mt-2 pt-2 border-t border-white/10 space-y-1">
+                                                <div class="flex justify-between p-2 bg-white/5 rounded">
+                                                    <span class="text-gray-400">Webhook URL:</span>
+                                                    <code class="text-indigo-300 font-mono truncate max-w-[200px]" x-text="webhookUrl || 'Auto-generated'"></code>
+                                                </div>
+                                                <div class="flex justify-between p-2 bg-white/5 rounded">
+                                                    <span class="text-gray-400">Verify Token:</span>
+                                                    <code class="text-indigo-300 font-mono" x-text="waConfig.webhook_verify_token || 'scube_wa_verify_2024'"></code>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <p class="text-gray-400 text-xs mt-3">Click <strong>Edit Configuration</strong> to update any values. The green pulsing dot indicates an active connection.</p>
+                                    </div>
+
+                                    <!-- Troubleshooting -->
+                                    <div class="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
+                                        <p class="font-medium text-yellow-300 mb-1">Troubleshooting</p>
+                                        <ul class="list-disc list-inside space-y-1 text-xs text-gray-400">
+                                            <li><strong>Webhook verification fails:</strong> Make sure the Verify Token in Meta/MSG91 matches <code class="text-gray-300">scube_wa_verify_2024</code> exactly</li>
+                                            <li><strong>Messages not being received:</strong> Check that your webhook URL is set correctly in the provider dashboard and the webhook is subscribed to <code class="text-gray-300">messages</code> events</li>
+                                            <li><strong>Messages not sending:</strong> Verify your Access Token (Meta) or Auth Key (MSG91) is still valid and hasn't expired</li>
+                                            <li><strong>Need to update credentials:</strong> Click <strong>Edit Configuration</strong> on the WhatsApp card to update any field</li>
+                                            <li><strong>MSG91 API changes:</strong> If MSG91 provides a different API endpoint URL, update it in the <strong>API Endpoint URL</strong> field</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div class="mt-6 flex justify-end">
+                                    <button @click="showWAHelp = false" class="btn-primary px-5 py-2.5 rounded-lg text-sm font-medium text-white">Got it</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========== CONVERSATIONS TAB ========== -->
+                <div x-show="activeTab === 'conversations'" x-transition>
+                    <div class="card p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-semibold">Conversations</h3>
+                            <div class="flex gap-1 bg-white/5 rounded-lg p-1 text-xs" x-show="whatsappConfigured">
+                                <button @click="conversationMode = 'chat'" class="px-3 py-1.5 rounded-md transition" :class="conversationMode === 'chat' ? 'bg-indigo-500/30 text-white' : 'text-gray-400 hover:text-white'">Chatbot</button>
+                                <button @click="conversationMode = 'whatsapp'; loadWhatsAppContacts()" class="px-3 py-1.5 rounded-md transition" :class="conversationMode === 'whatsapp' ? 'bg-indigo-500/30 text-white' : 'text-gray-400 hover:text-white'">WhatsApp</button>
+                            </div>
+                        </div>
+
+                        <!-- Chatbot Conversations -->
+                        <div x-show="conversationMode === 'chat'">
+                            <div x-show="loadingConversations" class="text-center py-8 text-gray-400">
+                                <div class="spinner mx-auto mb-2"></div>
+                                Loading...
+                            </div>
+                            <div x-show="!loadingConversations && chatConversations.length === 0" class="text-center py-8 text-gray-400">
+                                <svg class="w-12 h-12 mx-auto mb-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.026 3 11c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                                <p>No chatbot conversations yet. Your chatbot will appear here once visitors start chatting.</p>
+                            </div>
+                            
+                            <!-- Session list -->
+                            <div x-show="!selectedSessionId && !loadingConversations && chatConversations.length > 0" class="space-y-2">
+                                <template x-for="conv in chatConversations" :key="conv.thread_id">
+                                    <div @click="selectedSessionId = conv.thread_id; loadChatMessages(conv.thread_id)" class="p-4 bg-white/5 rounded-lg cursor-pointer hover:bg-white/10 transition">
+                                        <div class="flex items-center justify-between mb-1">
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-xs px-2 py-1 bg-blue-500/20 text-blue-300 rounded">Chat</span>
+                                                <span class="text-sm font-medium" x-text="conv.contact_label || 'Website Visitor'"></span>
+                                            </div>
+                                            <span class="text-xs text-gray-500" x-text="formatDateTime(conv?.last_message_at || conv?.updated_at)"></span>
+                                        </div>
+                                        <div class="flex items-center justify-between">
+                                            <p class="text-sm text-gray-400 truncate flex-1" x-text="conv.preview || 'No messages'"></p>
+                                            <span class="text-xs text-gray-500 ml-2 shrink-0" x-text="(conv.message_count || 0) + ' msgs'"></span>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                            
+                            <!-- Message thread -->
+                            <div x-show="selectedSessionId">
+                                <button @click="selectedSessionId = null; chatMessages = []" class="text-sm text-indigo-400 hover:text-indigo-300 mb-3">&larr; Back to sessions</button>
+                                <div class="space-y-3 max-h-[500px] overflow-y-auto pr-2">
+                                    <template x-for="m in chatMessages" :key="m.id">
+                                        <div class="flex" :class="m.sender_type === 'assistant' ? 'justify-end' : 'justify-start'">
+                                            <div class="max-w-[80%] p-3 rounded-xl text-sm" :class="m.sender_type === 'assistant' ? 'bg-indigo-500/20 text-indigo-200' : 'bg-white/10 text-gray-200'">
+                                                <p x-text="m.content"></p>
+                                                <p class="text-xs mt-1 opacity-50" x-text="formatDateTime(m?.created_at)"></p>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <div x-show="chatMessages.length === 0" class="text-center text-gray-500 py-4">Loading messages...</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- WhatsApp Conversations -->
+                        <div x-show="conversationMode === 'whatsapp'">
+                            <div x-show="loadingWAContacts" class="text-center py-8 text-gray-400">
+                                <div class="spinner mx-auto mb-2"></div>
+                                Loading...
+                            </div>
+                            <div x-show="!loadingWAContacts && waContacts.length === 0" class="text-center py-8 text-gray-400">
+                                <p>No WhatsApp conversations yet.</p>
+                            </div>
+                            <!-- WhatsApp conversations using unified data -->
+                            <div x-show="!selectedContactId && !loadingWAContacts && whatsappConversations.length > 0" class="space-y-2">
+                                <template x-for="conv in whatsappConversations" :key="conv.thread_id">
+                                    <div @click="selectedContactId = conv.contact_id; loadContactMessages(conv.contact_id)" class="p-4 bg-white/5 rounded-lg cursor-pointer hover:bg-white/10 transition">
+                                        <div class="flex items-center justify-between mb-1">
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-xs px-2 py-1 bg-green-500/20 text-green-300 rounded">WhatsApp</span>
+                                                <span class="text-sm font-medium" x-text="conv.contact_label || conv.phone_number"></span>
+                                            </div>
+                                            <span class="text-xs text-gray-500" x-text="formatDateTime(conv?.last_message_at || conv?.updated_at)"></span>
+                                        </div>
+                                        <div class="flex items-center justify-between">
+                                            <p class="text-sm text-gray-400 truncate flex-1" x-text="conv.preview || 'No messages'"></p>
+                                            <span class="text-xs text-gray-500 ml-2 shrink-0" x-text="(conv.message_count || 0) + ' msgs'"></span>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                            <!-- Message thread -->
+                            <div x-show="selectedContactId">
+                                <button @click="selectedContactId = null; waContactMessages = []" class="text-sm text-indigo-400 hover:text-indigo-300 mb-3">&larr; Back to conversations</button>
+                                <div class="space-y-3 max-h-[500px] overflow-y-auto pr-2">
+                                    <template x-for="m in waContactMessages" :key="m.id">
+                                        <div class="flex" :class="m.direction === 'outbound' ? 'justify-end' : 'justify-start'">
+                                            <div class="max-w-[80%] p-3 rounded-xl text-sm" :class="m.direction === 'outbound' ? 'bg-indigo-500/20 text-indigo-200' : 'bg-white/10 text-gray-200'">
+                                                <p x-text="m.content"></p>
+                                                <p class="text-xs mt-1 opacity-50" x-text="formatDateTime(m?.created_at)"></p>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========== CRM TAB ========== -->
+                <div x-show="activeTab === 'crm'" x-transition>
+                    <div class="card p-6 mb-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-semibold">CRM</h3>
+                            <div class="flex gap-1 bg-white/5 rounded-lg p-1 text-xs">
+                                <button @click="crmView = 'overview'" class="px-3 py-1.5 rounded-md transition" :class="crmView === 'overview' ? 'bg-indigo-500/30 text-white' : 'text-gray-400 hover:text-white'">Overview</button>
+                                <button @click="crmView = 'leads'; loadCRMLeads()" class="px-3 py-1.5 rounded-md transition" :class="crmView === 'leads' ? 'bg-indigo-500/30 text-white' : 'text-gray-400 hover:text-white'">Leads</button>
+                                <button @click="crmView = 'contacts'; loadCRMContacts()" class="px-3 py-1.5 rounded-md transition" :class="crmView === 'contacts' ? 'bg-indigo-500/30 text-white' : 'text-gray-400 hover:text-white'">Contacts</button>
+                                <button @click="crmView = 'automation'; loadCRMTemplates()" class="px-3 py-1.5 rounded-md transition" :class="crmView === 'automation' ? 'bg-indigo-500/30 text-white' : 'text-gray-400 hover:text-white'">Automation</button>
+                            </div>
+                        </div>
+
+                        <!-- CRM Overview -->
+                        <div x-show="crmView === 'overview'">
+                            <div x-show="loadingCRMStats" class="text-center py-8 text-gray-400">
+                                <div class="spinner mx-auto mb-2"></div>
+                                Loading...
+                            </div>
+                            <div x-show="!loadingCRMStats && crmStats">
+                                <!-- KPI Cards -->
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                                    <div class="bg-white/5 rounded-lg p-4 text-center">
+                                        <div class="text-2xl font-bold text-indigo-400" x-text="crmStats?.total_contacts || 0"></div>
+                                        <div class="text-xs text-gray-400 mt-1">Total Contacts</div>
+                                    </div>
+                                    <div class="bg-white/5 rounded-lg p-4 text-center">
+                                        <div class="text-2xl font-bold text-green-400" x-text="crmStats?.active_contacts || 0"></div>
+                                        <div class="text-xs text-gray-400 mt-1">Active</div>
+                                    </div>
+                                    <div class="bg-white/5 rounded-lg p-4 text-center">
+                                        <div class="text-2xl font-bold text-amber-400" x-text="crmStats?.total_leads || 0"></div>
+                                        <div class="text-xs text-gray-400 mt-1">Total Leads</div>
+                                    </div>
+                                    <div class="bg-white/5 rounded-lg p-4 text-center">
+                                        <div class="text-2xl font-bold text-blue-400" x-text="(crmStats?.conversion_rate || 0) + '%'"></div>
+                                        <div class="text-xs text-gray-400 mt-1">Conversion Rate</div>
+                                    </div>
+                                </div>
+
+                                <!-- Lead breakdown -->
+                                <div class="grid grid-cols-3 gap-4 mb-6">
+                                    <div class="bg-amber-500/10 rounded-lg p-3 text-center">
+                                        <div class="text-lg font-semibold text-amber-400" x-text="crmStats?.tentative_leads || 0"></div>
+                                        <div class="text-xs text-gray-400">Tentative</div>
+                                    </div>
+                                    <div class="bg-green-500/10 rounded-lg p-3 text-center">
+                                        <div class="text-lg font-semibold text-green-400" x-text="crmStats?.confirmed_leads || 0"></div>
+                                        <div class="text-xs text-gray-400">Confirmed</div>
+                                    </div>
+                                    <div class="bg-red-500/10 rounded-lg p-3 text-center">
+                                        <div class="text-lg font-semibold text-red-400" x-text="crmStats?.cancelled_leads || 0"></div>
+                                        <div class="text-xs text-gray-400">Cancelled</div>
+                                    </div>
+                                </div>
+
+                                <!-- Leads this period -->
+                                <div class="grid grid-cols-3 gap-4">
+                                    <div class="bg-white/5 rounded-lg p-3">
+                                        <div class="text-lg font-semibold" x-text="crmStats?.leads_today || 0"></div>
+                                        <div class="text-xs text-gray-400">Today</div>
+                                    </div>
+                                    <div class="bg-white/5 rounded-lg p-3">
+                                        <div class="text-lg font-semibold" x-text="crmStats?.leads_this_week || 0"></div>
+                                        <div class="text-xs text-gray-400">This Week</div>
+                                    </div>
+                                    <div class="bg-white/5 rounded-lg p-3">
+                                        <div class="text-lg font-semibold" x-text="crmStats?.leads_this_month || 0"></div>
+                                        <div class="text-xs text-gray-400">This Month</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CRM Leads -->
+                        <div x-show="crmView === 'leads'">
+                            <div x-show="loadingCRMLeads" class="text-center py-8 text-gray-400">
+                                <div class="spinner mx-auto mb-2"></div>
+                                Loading...
+                            </div>
+                            <div x-show="!loadingCRMLeads">
+                                <!-- Debug Refresh -->
+                                <div class="flex justify-end mb-2">
+                                    <button @click="loadCRMLeads(); console.log('Manual refresh clicked')" class="text-xs text-indigo-400 hover:text-indigo-300">
+                                        🔄 Refresh Leads
+                                    </button>
+                                </div>
+                                <!-- Filters -->
+                                <div class="flex gap-2 mb-4">
+                                    <select x-model="leadStatusFilter" @change="loadCRMLeads()" class="input-field w-36">
+                                        <option value="">All Status</option>
+                                        <option value="tentative">Tentative</option>
+                                        <option value="confirmed">Confirmed</option>
+                                        <option value="cancelled">Cancelled</option>
+                                        <option value="collected">Collected</option>
+                                    </select>
+                                    <select x-model="leadSourceFilter" @change="loadCRMLeads()" class="input-field w-32">
+                                        <option value="">All Sources</option>
+                                        <option value="whatsapp">WhatsApp</option>
+                                        <option value="chatbot">Chatbot</option>
+                                    </select>
+                                    <select x-model="leadIntentFilter" @change="loadCRMLeads()" class="input-field w-40">
+                                        <option value="">All Types</option>
+                                        <option value="booking">Booking</option>
+                                        <option value="callback">Callback</option>
+                                        <option value="demo_scheduling">Demo</option>
+                                        <option value="lead_form">Lead Form</option>
+                                    </select>
+                                    <span class="text-xs text-gray-500 self-center ml-auto" x-text="'Showing ' + crmLeads.length + ' leads'"></span>
+                                </div>
+
+                                <!-- Leads table -->
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-sm">
+                                        <thead>
+                                            <tr class="text-gray-400 text-xs uppercase border-b border-white/5">
+                                                <th class="text-left py-2 px-2">Contact</th>
+                                                <th class="text-left py-2 px-2">Intent</th>
+                                                <th class="text-left py-2 px-2">Source</th>
+                                                <th class="text-left py-2 px-2">Date / Time</th>
+                                                <th class="text-left py-2 px-2">Service</th>
+                                                <th class="text-left py-2 px-2">Status</th>
+                                                <th class="text-left py-2 px-2">Created</th>
+                                                <th class="text-left py-2 px-2"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <template x-for="lead in crmLeads" :key="lead.id">
+                                                <tr class="border-b border-white/5 hover:bg-white/5">
+                                                    <td class="py-2 px-2">
+                                                        <div x-text="lead.contact_name || '—'" class="font-medium"></div>
+                                                        <div class="text-xs text-gray-500" x-text="lead.contact_phone || ''"></div>
+                                                    </td>
+                                                    <td class="py-2 px-2">
+                                                        <span class="text-xs bg-indigo-500/10 text-indigo-300 px-2 py-0.5 rounded" x-text="lead.intent_type"></span>
+                                                    </td>
+                                                    <td class="py-2 px-2">
+                                                        <span x-show="lead.source === 'whatsapp'" class="text-xs bg-green-500/10 text-green-400 px-2 py-0.5 rounded">WhatsApp</span>
+                                                        <span x-show="lead.source === 'chatbot'" class="text-xs bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded">Chatbot</span>
+                                                    </td>
+                                                    <td class="py-2 px-2 text-xs">
+                                                        <div x-text="lead.requested_date || '—'"></div>
+                                                        <div x-show="lead.requested_time" class="text-gray-500" x-text="lead.requested_time"></div>
+                                                    </td>
+                                                    <td class="py-2 px-2 text-xs" x-text="lead.requested_type || '—'"></td>
+                                                    <td class="py-2 px-2">
+                                                        <span x-show="lead.status === 'confirmed'" class="text-green-400 text-xs font-medium bg-green-500/10 px-2 py-0.5 rounded">Confirmed</span>
+                                                        <span x-show="lead.status === 'tentative'" class="text-amber-400 text-xs font-medium bg-amber-500/10 px-2 py-0.5 rounded">Tentative</span>
+                                                        <span x-show="lead.status === 'cancelled'" class="text-red-400 text-xs font-medium bg-red-500/10 px-2 py-0.5 rounded">Cancelled</span>
+                                                    </td>
+                                                    <td class="py-2 px-2 text-xs text-gray-400" x-text="lead.created_at ? formatDateTime(lead.created_at) : '—'"></td>
+                                                    <td class="py-2 px-2">
+                                                        <div class="flex gap-1" x-show="lead.status === 'tentative'">
+                                                            <button @click="confirmLead(lead)" class="text-green-400 hover:text-green-300 text-xs bg-green-500/10 px-2 py-1 rounded">Confirm</button>
+                                                            <button @click="cancelLead(lead)" class="text-red-400 hover:text-red-300 text-xs bg-red-500/10 px-2 py-1 rounded">Cancel</button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </template>
+                                            <tr x-show="!crmLeads.length">
+                                                <td colspan="7" class="text-center py-8 text-gray-500">No leads found</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CRM Contacts -->
+                        <div x-show="crmView === 'contacts'">
+                            <div x-show="loadingCRMContacts" class="text-center py-8 text-gray-400">
+                                <div class="spinner mx-auto mb-2"></div>
+                                Loading...
+                            </div>
+                            <div x-show="!loadingCRMContacts">
+                                <!-- Search -->
+                                <div class="flex gap-2 mb-4">
+                                    <input type="text" x-model="crmSearch" @input.debounce="loadCRMContacts()" placeholder="Search contacts..." class="input-field flex-1">
+                                    <select x-model="crmTagFilter" @change="loadCRMContacts()" class="input-field w-32">
+                                        <option value="">All Tags</option>
+                                        <option value="vip">VIP</option>
+                                        <option value="hot_lead">Hot Lead</option>
+                                        <option value="repeat">Repeat</option>
+                                    </select>
+                                </div>
+
+                                <!-- Contacts table -->
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-sm">
+                                        <thead>
+                                            <tr class="text-gray-400 text-xs uppercase border-b border-white/5">
+                                                <th class="text-left py-2 px-2">Name</th>
+                                                <th class="text-left py-2 px-2">Phone</th>
+                                                <th class="text-left py-2 px-2">Company</th>
+                                                <th class="text-left py-2 px-2">Tags</th>
+                                                <th class="text-left py-2 px-2">Last Message</th>
+                                                <th class="text-left py-2 px-2">Lead Status</th>
+                                                <th class="text-left py-2 px-2"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <template x-for="c in crmContacts" :key="c.id">
+                                                <tr class="border-b border-white/5 hover:bg-white/5">
+                                                    <td class="py-2 px-2" x-text="c.contact_name || '—'"></td>
+                                                    <td class="py-2 px-2 text-gray-400" x-text="c.phone_number"></td>
+                                                    <td class="py-2 px-2" x-text="c.company || '—'"></td>
+                                                    <td class="py-2 px-2">
+                                                        <template x-for="t in (c.tags || [])" :key="t">
+                                                            <span class="inline-block bg-indigo-500/20 text-indigo-300 text-xs px-2 py-0.5 rounded mr-1" x-text="t"></span>
+                                                        </template>
+                                                        <span x-show="!(c.tags || []).length" class="text-gray-500">—</span>
+                                                    </td>
+                                                    <td class="py-2 px-2 text-gray-400 text-xs" x-text="c.last_message_at ? formatDateTime(c.last_message_at) : '—'"></td>
+                                                    <td class="py-2 px-2">
+                                                        <span x-show="c.last_lead_status === 'confirmed'" class="text-green-400 text-xs">Confirmed</span>
+                                                        <span x-show="c.last_lead_status === 'tentative'" class="text-amber-400 text-xs">Tentative</span>
+                                                        <span x-show="!c.last_lead_status" class="text-gray-500">—</span>
+                                                    </td>
+                                                    <td class="py-2 px-2">
+                                                        <button @click="openCRMContact(c)" class="text-indigo-400 hover:text-indigo-300 text-xs">View</button>
+                                                    </td>
+                                                </tr>
+                                            </template>
+                                            <tr x-show="!crmContacts.length">
+                                                <td colspan="7" class="text-center py-8 text-gray-500">No contacts found</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CRM Automation -->
+                        <div x-show="crmView === 'automation'">
+                            <div x-show="loadingCRMTemplates" class="text-center py-8 text-gray-400">
+                                <div class="spinner mx-auto mb-2"></div>
+                                Loading...
+                            </div>
+                            <div x-show="!loadingCRMTemplates">
+                                <p class="text-xs text-gray-400 mb-4">Configure follow-up messages. Templates with {{name}}, {{service}}, {{date}}, {{time}} are auto-filled.</p>
+
+                                <template x-for="tpl in crmTemplates" :key="tpl.id">
+                                    <div class="bg-white/5 rounded-lg p-4 mb-3">
+                                        <div class="flex items-start justify-between mb-2">
+                                            <div>
+                                                <span class="text-xs font-medium text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded" x-text="tpl.trigger_event"></span>
+                                                <span class="text-xs text-gray-500 ml-2" x-text="tpl.industry || 'All Industries'"></span>
+                                                <span class="text-xs text-gray-500 ml-2" x-text="tpl.delay_hours + 'h delay'"></span>
+                                            </div>
+                                            <label class="relative inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" :checked="tpl.is_active" @change="toggleTemplate(tpl)" class="sr-only peer">
+                                                <div class="w-8 h-4 bg-gray-600 rounded-full peer peer-checked:bg-indigo-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4"></div>
+                                            </label>
+                                        </div>
+                                        <div class="text-sm text-gray-300 mb-2" x-text="tpl.template_text"></div>
+                                        <div x-show="tpl.conclusive_line" class="text-xs text-gray-500 italic" x-text="'→ ' + tpl.conclusive_line"></div>
+                                    </div>
+                                </template>
+                                <div x-show="!crmTemplates.length" class="text-center py-8 text-gray-500">No templates configured</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========== CALENDAR TAB ========== -->
+                <div x-show="activeTab === 'calendar'" x-transition>
+                    <!-- Calendar Connection Status -->
+                    <div class="card p-6 mb-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold">Google Calendar</h3>
+                                    <p class="text-sm text-gray-400">Connect to enable meeting bookings</p>
+                                </div>
+                            </div>
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold"
+                                  :class="calendarStatus.is_connected ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'"
+                                  x-text="calendarStatus.is_connected ? 'Connected' : 'Not Connected'"></span>
+                        </div>
+                        <div x-show="!calendarStatus.is_connected">
+                            <p class="text-sm text-gray-400 mb-4">Connect your Google Calendar so the chatbot can check availability and book meetings automatically.</p>
+                            <button @click="connectCalendar()" class="btn-primary px-5 py-2.5 rounded-lg text-sm font-medium text-white">Connect Google Calendar</button>
+                        </div>
+                        <div x-show="calendarStatus.is_connected" class="space-y-3">
+                            <div class="text-sm text-gray-300">
+                                <p>Connected as: <span class="font-medium" x-text="calendarStatus.provider_email || 'Google Calendar'"></span></p>
+                                <p>Meeting links: <span class="font-medium" x-text="calendarStatus.meeting_provider === 'google_meet' ? 'Google Meet' : 'Zoom'"></span></p>
+                            </div>
+                            <button @click="disconnectCalendar()" class="px-4 py-2 bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-lg hover:bg-red-500/20 transition">Disconnect</button>
+                        </div>
+                    </div>
+
+                    <!-- Availability Settings -->
+                    <div class="card p-6">
+                        <h3 class="font-semibold mb-4">Weekly Availability</h3>
+                        <p class="text-sm text-gray-400 mb-4">Set the hours when customers can book meetings with you.</p>
+
+                        <div x-show="loadingCalendar" class="text-center py-8 text-gray-400">
+                            <div class="spinner mx-auto mb-2"></div>
+                            Loading...
+                        </div>
+
+                        <div x-show="!loadingCalendar" class="space-y-3">
+                            <template x-for="day in weekDays" :key="day.value">
+                                <div class="flex items-center gap-4 p-3 bg-white/5 rounded-lg">
+                                    <div class="w-24 text-sm font-medium" x-text="day.label"></div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" class="sr-only peer" :checked="isDayEnabled(day.value)" @change="toggleDay(day.value)">
+                                        <div class="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-500"></div>
+                                    </label>
+                                    <template x-if="isDayEnabled(day.value)">
+                                        <div class="flex items-center gap-2">
+                                            <input type="time" :value="getDayStart(day.value)" @change="setDayStart(day.value, $event.target.value)" class="input-field px-2 py-1 text-sm text-white w-24">
+                                            <span class="text-gray-400">to</span>
+                                            <input type="time" :value="getDayEnd(day.value)" @change="setDayEnd(day.value, $event.target.value)" class="input-field px-2 py-1 text-sm text-white w-24">
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+
+                        <div class="flex gap-3 mt-6">
+                            <button @click="saveAvailability()" class="btn-primary px-5 py-2.5 rounded-lg text-sm font-medium text-white">Save Availability</button>
+                            <button @click="setDefaults()" class="px-4 py-2 bg-white/10 text-gray-300 text-sm rounded-lg hover:bg-white/20 transition">Set Mon-Fri 9-5</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========== BILLING TAB ========== -->
+                <div x-show="activeTab === 'billing'" x-transition>
+                    <!-- Trial Status -->
+                    <div class="card p-6 mb-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="font-semibold mb-1">Current Plan</h3>
+                                <p class="text-2xl font-bold" x-text="(subscriptionPlan || 'trial').charAt(0).toUpperCase() + (subscriptionPlan || 'trial').slice(1)"></p>
+                                <p class="text-sm text-gray-400 mt-1" x-text="trialDays > 0 ? trialDays + ' days remaining in free trial' : 'Trial expired'"></p>
+                            </div>
+                            <div class="text-right">
+                                <div class="w-32 h-32 relative">
+                                    <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                                        <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="3"/>
+                                        <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" :stroke="trialDays > 3 ? '#10b981' : trialDays > 0 ? '#f59e0b' : '#ef4444'" stroke-width="3" :stroke-dasharray="(trialDays / 7 * 100) + ', 100'"/>
+                                    </svg>
+                                    <div class="absolute inset-0 flex items-center justify-center">
+                                        <span class="text-2xl font-bold" x-text="trialDays"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Upgrade Options -->
+                    <div class="card p-6 mb-6">
+                        <h3 class="font-semibold mb-4">Upgrade Your Plan</h3>
+                        <div x-show="loadingPlans" class="text-center py-8 text-gray-400">
+                            <div class="spinner mx-auto mb-2"></div>
+                            Loading plans...
+                        </div>
+                        <div x-show="!loadingPlans && plans.length > 0" class="grid md:grid-cols-3 gap-4">
+                            <template x-for="plan in plans" :key="plan.name">
+                                <div class="card p-5 hover:border-indigo-500/30 transition"
+                                     :class="{ 'border-indigo-500/30': plan.name === 'growth' }">
+                                    <div x-show="plan.name === 'growth'" class="mb-2">
+                                        <span class="px-2 py-1 bg-indigo-500/20 text-indigo-400 text-xs rounded-full">Most Popular</span>
+                                    </div>
+                                    <h4 class="font-semibold" x-text="plan.display_name"></h4>
+                                    <p class="text-2xl font-bold my-2">$<span x-text="plan.price_monthly"></span><span class="text-sm text-gray-400 font-normal">/mo</span></p>
+                                    <ul class="text-xs text-gray-400 space-y-1 mb-4">
+                                        <li x-text="(plan.monthly_message_limit || 0).toLocaleString() + ' messages'"></li>
+                                        <li x-text="plan.max_documents + ' documents'"></li>
+                                        <li x-show="plan.includes_whatsapp">WhatsApp included</li>
+                                    </ul>
+                                    <button @click="selectPlan(plan.name)" class="w-full py-2 rounded-lg text-sm font-medium transition"
+                                            :class="plan.name === 'growth' ? 'btn-primary text-white' : 'bg-white/10 text-white hover:bg-white/20'">
+                                        Upgrade to <span x-text="plan.display_name"></span>
+                                    </button>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Payment Method Selection -->
+                    <div x-show="selectedPlan" class="card p-6 opacity-60 pointer-events-none">
+                        <h3 class="font-semibold mb-4">Choose Payment Method</h3>
+                        <p class="text-sm text-gray-400 mb-4">Upgrading to: <span class="font-medium text-white" x-text="selectedPlan"></span></p>
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <button disabled class="card p-5 transition text-left cursor-not-allowed">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <div class="w-10 h-10 bg-indigo-500/20 rounded-lg flex items-center justify-center">
+                                        <svg class="w-5 h-5 text-indigo-400" fill="currentColor" viewBox="0 0 24 24"><path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.346 1.545-1.875 0-4.905-.924-6.904-2.102l-.9 5.573C5.115 22.99 8.316 24 11.714 24c2.641 0 4.843-.624 6.33-1.813 1.664-1.305 2.525-3.232 2.525-5.717 0-4.116-2.524-5.838-6.593-7.32z"/></svg>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium">Stripe</h4>
+                                        <p class="text-xs text-gray-400">Credit/Debit Card</p>
+                                    </div>
+                                </div>
+                            </button>
+                            <button disabled class="card p-5 transition text-left cursor-not-allowed">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <div class="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
+                                        <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium">PayNow</h4>
+                                        <p class="text-xs text-gray-400">Singapore Bank Transfer</p>
+                                    </div>
+                                </div>
+                            </button>
+                        </div>
+                        <div class="mt-4 text-center text-sm text-red-400 font-semibold">
+                            Payment is not yet available. Please check back soon.
+                        </div>
+                    </div>
+
+                    <!-- PayNow QR Modal -->
+                    <div x-show="showPayNowModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" x-cloak>
+                        <div class="card p-6 w-full max-w-md">
+                            <h3 class="font-semibold mb-4">PayNow Payment</h3>
+                            <div class="text-center mb-4">
+                                <p class="text-3xl font-bold" x-text="'$' + paynowData.amount"></p>
+                                <p class="text-sm text-gray-400" x-text="paynowData.reference"></p>
+                            </div>
+                            <div class="bg-white p-4 rounded-lg mb-4">
+                                <div class="text-center text-gray-800">
+                                    <p class="text-sm font-mono" x-text="paynowData.qr_data"></p>
+                                    <p class="text-xs text-gray-500 mt-2">Scan with your bank app or use PayNow to UEN:</p>
+                                    <p class="text-lg font-bold" x-text="paynowData.paynow_uen"></p>
+                                </div>
+                            </div>
+                            <p class="text-xs text-gray-400 mb-4" x-text="paynowData.instructions"></p>
+                            <div class="flex gap-3">
+                                <button @click="showPayNowModal = false" class="flex-1 px-4 py-2 bg-white/10 rounded-lg text-sm hover:bg-white/20">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========== SETTINGS TAB ========== -->
+                <div x-show="activeTab === 'settings'" x-transition>
+                    <div class="card p-6 max-w-2xl">
+                        <h3 class="font-semibold mb-6">Business Settings</h3>
+
+                        <div class="space-y-5">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1">Business Name <span class="text-red-400">*</span></label>
+                                <input type="text" x-model="settings.businessName" class="input-field w-full px-4 py-2.5 text-sm text-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1">Website URL <span class="text-red-400">*</span></label>
+                                <input type="text" x-model="settings.websiteUrl" class="input-field w-full px-4 py-2.5 text-sm text-white" placeholder="https://example.com">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1">Industry</label>
+                                <select x-model="settings.industry" class="input-field w-full px-4 py-2.5 text-sm text-white">
+                                    <option value="other">Other (Services/Consulting)</option>
+                                    <option value="consulting">Consulting</option>
+                                    <option value="services">Professional Services</option>
+                                    <option value="ecommerce">E-commerce</option>
+                                    <option value="retail">Retail</option>
+                                    <option value="food">Food & Beverage</option>
+                                    <option value="technology">Technology</option>
+                                    <option value="healthcare">Healthcare</option>
+                                    <option value="education">Education</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1">Chatbot Tone</label>
+                                <select x-model="settings.tone" class="input-field w-full px-4 py-2.5 text-sm text-white">
+                                    <option value="friendly">Friendly</option>
+                                    <option value="formal">Formal</option>
+                                    <option value="technical">Technical</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1">Timezone</label>
+                                <select x-model="settings.timezone" class="input-field w-full px-4 py-2.5 text-sm text-white">
+                                    <option value="Asia/Singapore">Singapore (SGT)</option>
+                                    <option value="Asia/Kolkata">India (IST)</option>
+                                    <option value="Asia/Tokyo">Japan (JST)</option>
+                                    <option value="Asia/Shanghai">China (CST)</option>
+                                    <option value="Europe/London">London (GMT/BST)</option>
+                                    <option value="Europe/Paris">Paris (CET/CEST)</option>
+                                    <option value="America/New_York">New York (EST/EDT)</option>
+                                    <option value="America/Los_Angeles">Los Angeles (PST/PDT)</option>
+                                    <option value="America/Chicago">Chicago (CST/CDT)</option>
+                                    <option value="Australia/Sydney">Sydney (AEST/AEDT)</option>
+                                    <option value="UTC">UTC</option>
+                                </select>
+                                <p class="text-xs text-gray-500 mt-1">All dates and times will be displayed in this timezone</p>
+                            </div>
+
+                            <!-- External API (Reply Back) -->
+                            <div class="mt-8 pt-6 border-t border-white/5">
+                                <h4 class="font-semibold mb-3">E-Commerce Integration (Advanced)</h4>
+                                <p class="text-xs text-gray-400 mb-4">
+                                    <strong>For E-commerce Businesses Only:</strong> Connect your e-commerce platform to enable real-time product searches, stock checks, and order tracking. 
+                                    Service businesses should leave this disabled.
+                                </p>
+                                
+                                <!-- Check if it's a service business and grey out -->
+                                <div class="space-y-4" :class="{'opacity-50 pointer-events-none': settings.industry === 'other' || settings.industry === 'consulting' || settings.industry === 'services'}">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-300 mb-1">
+                                            API Endpoint URL
+                                            <span class="text-xs text-yellow-400 ml-2" x-show="settings.industry === 'other' || settings.industry === 'consulting' || settings.industry === 'services'">
+                                                (Not needed for service businesses)
+                                            </span>
+                                        </label>
+                                        <input type="url" x-model="settings.externalApiUrl" 
+                                               placeholder="https://your-store.com/api/products" 
+                                               class="input-field w-full px-4 py-2.5 text-sm text-white"
+                                               :disabled="settings.industry === 'other' || settings.industry === 'consulting' || settings.industry === 'services'">
+                                        <p class="text-xs text-gray-500 mt-1" x-show="settings.industry === 'ecommerce' || settings.industry === 'retail'">
+                                            Your e-commerce platform API endpoint for product data
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-300 mb-1">API Key</label>
+                                        <input type="password" x-model="settings.externalApiKey" 
+                                               placeholder="Bearer token for authentication" 
+                                               class="input-field w-full px-4 py-2.5 text-sm text-white"
+                                               :disabled="settings.industry === 'other' || settings.industry === 'consulting' || settings.industry === 'services'">
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <label class="relative inline-flex items-center cursor-pointer"
+                                               :class="{'opacity-50 cursor-not-allowed': settings.industry === 'other' || settings.industry === 'consulting' || settings.industry === 'services'}">
+                                            <input type="checkbox" class="sr-only peer" 
+                                                   x-model="settings.externalApiEnabled"
+                                                   :disabled="settings.industry === 'other' || settings.industry === 'consulting' || settings.industry === 'services'">
+                                            <div class="w-9 h-5 bg-white/10 rounded-full peer peer-checked:bg-indigo-500 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+                                        </label>
+                                        <span class="text-sm text-gray-300">Enable E-Commerce Integration</span>
+                                    </div>
+                                    
+                                    <!-- Info box for service businesses -->
+                                    <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3 text-xs" 
+                                         x-show="settings.industry === 'other' || settings.industry === 'consulting' || settings.industry === 'services'">
+                                        <p class="text-blue-300">
+                                            <strong>ℹ️ Service Business:</strong> E-commerce integration is not needed for your business type. 
+                                            This feature is only for online stores and retailers.
+                                        </p>
+                                    </div>
+                                    
+                                    <!-- Info box for ecommerce businesses -->
+                                    <div class="bg-green-900/20 border border-green-500/30 rounded-lg p-3 text-xs" 
+                                         x-show="settings.industry === 'ecommerce' || settings.industry === 'retail'">
+                                        <p class="text-green-300">
+                                            <strong>✅ E-commerce Business:</strong> Enable this to let customers check product availability, 
+                                            track orders, and get real-time product information through chat.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Notification Settings -->
+                            <div class="mt-8 pt-6 border-t border-white/5">
+                                <h4 class="font-semibold mb-3">📧 Email Notifications</h4>
+                                <p class="text-xs text-gray-400 mb-4">Get notified when customers request bookings or callbacks via WhatsApp.</p>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-300 mb-1">Notification Email</label>
+                                        <input type="email" x-model="settings.notificationEmail" placeholder="your@email.com" class="input-field w-full px-4 py-2.5 text-sm text-white">
+                                        <p class="text-xs text-gray-500 mt-1">Defaults to your daily report email if not set.</p>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" class="sr-only peer" x-model="settings.notifyOnBooking">
+                                            <div class="w-9 h-5 bg-white/10 rounded-full peer peer-checked:bg-indigo-500 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+                                        </label>
+                                        <span class="text-sm text-gray-300">Notify me on new booking/callback requests</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                        <button @click="saveSettings()" class="btn-primary px-6 py-2.5 rounded-lg text-sm font-medium text-white">Save Settings</button>
+                    </div>
+
+
+                    <!-- Subscription -->
+                        <div class="mt-8 pt-6 border-t border-white/5">
+                            <h4 class="font-semibold mb-3">Subscription</h4>
+                            <div class="flex items-center justify-between p-4 bg-white/5 rounded-lg">
+                                <div>
+                                    <span class="text-sm font-medium" x-text="(subscriptionPlan || 'trial').charAt(0).toUpperCase() + (subscriptionPlan || 'trial').slice(1) + ' Plan'"></span>
+                                    <p class="text-xs text-gray-400">Free trial</p>
+                                </div>
+                                <a href="/public/pricing" class="text-sm text-indigo-400 hover:text-indigo-300">Upgrade →</a>
+                            </div>
+                        </div>
+
+                        <!-- Danger Zone -->
+                        <div class="mt-8 pt-6 border-t border-white/5">
+                            <h4 class="font-semibold mb-3 text-red-400">Danger Zone</h4>
+                            <button @click="regenerateApiKey()" class="px-4 py-2 bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-lg hover:bg-red-500/20 transition">Regenerate API Key</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+<script>
+function tenantDashboard() {
+    return {
+        theme: localStorage.getItem('theme') || 'dark',
+        profileOpen: false,
+        showChangePassword: false,
+        pwdForm: { current: '', newPwd: '', confirm: '' },
+        pwdLoading: false,
+        pwdError: '',
+        authenticated: false,
+        activeTab: 'overview',
+        tenantId: '',
+        tenantName: '',
+        tenantSlug: '',
+        trialDays: 7,
+        subscriptionPlan: 'trial',
+        apiKey: '',
+        showApiKey: false,
+        showHelp: false,
+        embedCode: '',
+        tenantDetails: { timezone: 'Asia/Singapore' },  // Store tenant info including timezone
+        stats: { messages: 0, sessions: 0, leads: 0, unanswered: 0 },
+        conversations: [],
+        loadingConversations: false,
+        conversationMode: 'chat',
+        // Chatbot state
+        chatMessages: [],
+        selectedSessionId: null,
+        // WhatsApp state
+        waContacts: [],
+        waContactMessages: [],
+        selectedContactId: null,
+        loadingWAContacts: false,
+        settings: { businessName: '', websiteUrl: '', industry: 'other', tone: 'friendly', timezone: 'Asia/Singapore', notificationEmail: '', notifyOnBooking: true, externalApiUrl: '', externalApiKey: '', externalApiEnabled: false },
+        toast: { show: false, message: '', type: 'success' },
+
+        // Calendar state
+        calendarStatus: { is_connected: false, provider: null, provider_email: null, meeting_provider: 'google_meet' },
+        calendarAvailability: [],
+        loadingCalendar: false,
+        weekDays: [
+            { value: 0, label: 'Monday' }, { value: 1, label: 'Tuesday' }, { value: 2, label: 'Wednesday' },
+            { value: 3, label: 'Thursday' }, { value: 4, label: 'Friday' }, { value: 5, label: 'Saturday' }, { value: 6, label: 'Sunday' },
+        ],
+
+        // Billing state
+        plans: [],
+        loadingPlans: false,
+        selectedPlan: '',
+        showPayNowModal: false,
+        paynowData: { amount: 0, reference: '', qr_data: '', paynow_uen: '', instructions: '' },
+
+        // WhatsApp state
+        whatsappConfigured: false,
+        waEditing: false,
+        waProvider: 'meta',
+        waConfig: { phone_number_id: '', business_account_id: '', access_token: '', msg91_auth_key: '', msg91_integrated_number: '', msg91_api_endpoint: '', rate_limit_max_per_minute: 5, cooldown_seconds: 2, response_target_chars: 300 },
+        waStatus: { connection_status: 'disconnected', last_test: null, webhook_active: false, messages_today: 0, response_rate: 0, provider: 'none', phone_number: '-' },
+        waTestResult: null,
+        waTesting: false,
+        webhookUrl: '',
+        showWAHelp: false,
+        showSensitiveValues: false,
+
+        // CRM state
+        crmView: 'overview',
+        crmStats: { total_leads: 0, tentative_leads: 0, confirmed_leads: 0, cancelled_leads: 0, leads_today: 0, leads_this_week: 0, leads_this_month: 0, total_contacts: 0, active_contacts: 0, conversion_rate: 0 },
+        loadingCRMStats: false,
+        crmLeads: [],
+        loadingCRMLeads: false,
+        leadStatusFilter: '',
+        leadSourceFilter: '',
+        leadIntentFilter: '',
+        crmContacts: [],
+        loadingCRMContacts: false,
+        crmSearch: '',
+        crmTagFilter: '',
+        crmTemplates: [],
+        loadingCRMTemplates: false,
+        appointments: [],
+        loadingAppointments: false,
+
+        get tabTitle() {
+            return { overview: 'Overview', channels: 'Channels', conversations: 'Conversations', crm: 'CRM', calendar: 'Calendar', billing: 'Billing & Subscription', settings: 'Settings' }[this.activeTab];
+        },
+        
+        get chatConversations() {
+            // Filter only web chatbot conversations (not WhatsApp)
+            return this.conversations.filter(c => c.thread_type === 'web' || c.channel === 'web_chatbot');
+        },
+        get whatsappConversations() {
+            // Filter only WhatsApp conversations
+            return this.conversations.filter(c => c.thread_type === 'whatsapp' || c.channel === 'whatsapp');
+        },
+        get needsWebsite() {
+            return !this.settings.websiteUrl || !this.settings.websiteUrl.trim();
+        },
+        // UI state for widget help modal (removed)
+
+        async init() {
+            const params = new URLSearchParams(window.location.search);
+            const urlToken = params.get('token');
+            const urlTenantId = params.get('tenant_id');
+            const urlTenantName = params.get('tenant_name');
+            const urlTenantSlug = params.get('tenant_slug');
+
+            // OAuth callback — store from URL
+            if (urlToken && urlTenantId) {
+                localStorage.setItem('tenant_token', urlToken);
+                localStorage.setItem('tenant_id', urlTenantId);
+                if (urlTenantName) localStorage.setItem('tenant_name', urlTenantName);
+                if (urlTenantSlug) localStorage.setItem('tenant_slug', urlTenantSlug);
+                // Clean URL without reload
+                window.history.replaceState({}, document.title, window.location.pathname + '?tenant_id=' + urlTenantId);
+            }
+
+            const token = localStorage.getItem('tenant_token');
+            this.tenantId = localStorage.getItem('tenant_id');
+            this.tenantName = localStorage.getItem('tenant_name') || '';
+            this.tenantSlug = localStorage.getItem('tenant_slug') || '';
+
+            if (!token || !this.tenantId) {
+                window.location.href = '/public/login';
+                return;
+            }
+
+            this.authenticated = true;
+            await Promise.all([
+                this.loadTrialStatus(),
+                this.loadStats(),
+                this.loadApiKey(),
+                this.loadSettings(),
+                this.loadCalendarStatus(),
+                this.loadAvailability(),
+                this.loadPlans(),
+                this.loadWhatsAppConfig(),
+                this.loadWhatsAppStatus(),
+                this.loadConversations(),
+                this.loadCRMStats(),
+                this.loadAppointments(),
+            ]);
+
+            if (this.needsWebsite) {
+                this.activeTab = 'settings';
+                this.showToast('Please set your website URL to complete setup', 'warning');
+            }
+        },
+
+        formatDateTime(utcStr) {
+            if (!utcStr) return '';
+            try {
+                let s = utcStr;
+                if (typeof s === 'string' && !s.endsWith('Z') && !s.includes('+') && !s.includes('-', 10)) {
+                    s += 'Z';
+                }
+                const d = new Date(s);
+                const tz = this.settings?.timezone || 'Asia/Singapore';
+                return d.toLocaleString('en-US', {
+                    timeZone: tz,
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                });
+            } catch (e) {
+                return utcStr;
+            }
+        },
+
+        async loadTrialStatus() {
+            try {
+                const resp = await fetch(`/api/public/trial/status/${this.tenantId}`);
+                const data = await resp.json();
+                this.trialDays = data.days_remaining;
+                this.subscriptionPlan = data.subscription_plan;
+            } catch (e) { /* ignore */ }
+        },
+
+        async loadStats() {
+            try {
+                const resp = await fetch(`/api/tenants/${this.tenantId}/analytics`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('tenant_token')}` }
+                });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    this.stats.messages = data.total_messages || 0;
+                    this.stats.sessions = data.total_sessions || 0;
+                }
+            } catch (e) { /* ignore */ }
+        },
+
+        async loadApiKey() {
+            try {
+                const resp = await fetch(`/api/tenants/${this.tenantId}/api-keys`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('tenant_token')}` }
+                });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    if (data.api_keys && data.api_keys.length > 0) {
+                        this.apiKey = data.api_keys[0].key;
+                        const origin = window.location.origin;
+                        this.embedCode = `<!-- 💬 SCUBE AI Chatbot Widget - Paste this before </body> on every page -->
+<script id="scube-widget"
+    src="${origin}/static/widget.js"
+    data-tenant-id="${this.tenantId}"
+    data-api-key="${this.apiKey}"
+    async><\/script>
+<!--
+  🔧 To change widget position (default: bottom-right):
+     data-position="left"       → bottom-left
+     data-position="top-right"   → top-right
+     data-position="top-left"    → top-left
+  Example:
+  <script src="..." data-tenant-id="..." data-api-key="..." data-position="left" async><\/script>
+-->`;
+                    }
+                }
+            } catch (e) { /* ignore */ }
+        },
+
+        async loadSettings() {
+            try {
+                const resp = await fetch(`/api/tenants/${this.tenantId}`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('tenant_token')}` }
+                });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    this.settings.businessName = data.name || '';
+                    this.settings.websiteUrl = data.website_url || '';
+                    this.settings.industry = data.industry || 'other';
+                    this.settings.tone = data.tone || 'friendly';
+                    this.settings.timezone = data.timezone || 'Asia/Singapore';
+                    this.tenantDetails.timezone = data.timezone || 'Asia/Singapore';
+                    this.settings.notificationEmail = data.notification_email || '';
+                    this.settings.notifyOnBooking = data.notify_on_booking !== false; // default true
+                    this.settings.externalApiUrl = data.external_api_url || '';
+                    this.settings.externalApiKey = data.external_api_key || '';
+                    this.settings.externalApiEnabled = data.external_api_enabled || false;
+                }
+            } catch (e) { /* ignore */ }
+        },
+
+        async saveSettings() {
+            if (!this.settings.websiteUrl || !this.settings.websiteUrl.trim()) {
+                this.showToast('Website URL is required', 'error');
+                return;
+            }
+            if (!this.settings.businessName || !this.settings.businessName.trim()) {
+                this.showToast('Business name is required', 'error');
+                return;
+            }
+            try {
+                const resp = await fetch(`/api/tenants/${this.tenantId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('tenant_token')}`
+                    },
+                    body: JSON.stringify({
+                        name: this.settings.businessName,
+                        website_url: this.settings.websiteUrl,
+                        industry: this.settings.industry,
+                        tone: this.settings.tone,
+                        timezone: this.settings.timezone,
+                        notification_email: this.settings.notificationEmail || null,
+                        notify_on_booking: this.settings.notifyOnBooking,
+                        external_api_url: this.settings.externalApiUrl || null,
+                        external_api_key: this.settings.externalApiKey || null,
+                        external_api_enabled: this.settings.externalApiEnabled,
+                    })
+                });
+                if (resp.ok) {
+                    this.tenantDetails.timezone = this.settings.timezone;
+                    this.showToast('Settings saved successfully');
+                }
+            } catch (e) {
+                this.showToast('Failed to save settings', 'error');
+            }
+        },
+
+        async loadConversations() {
+            this.loadingConversations = true;
+            try {
+                // Use unified conversations endpoint that properly separates chat and WhatsApp
+                const resp = await fetch(`/api/admin/tenant-portal/conversations?limit=20`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('tenant_token')}` }
+                });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    this.conversations = data.conversations || [];
+                }
+            } catch (e) { /* ignore */ }
+            this.loadingConversations = false;
+        },
+
+        async loadChatMessages(sessionId) {
+            this.chatMessages = [];
+            try {
+                const resp = await fetch(`/api/tenants/conversations/session/${sessionId}`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('tenant_token')}` }
+                });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    // Transform to match WhatsApp message format
+                    this.chatMessages = (data.messages || []).map(m => ({
+                        id: m.id,
+                        content: m.content,
+                        sender_type: m.role,  // 'user' or 'assistant'
+                        created_at: m.created_at
+                    }));
+                }
+            } catch (e) { /* ignore */ }
+        },
+
+        async loadWhatsAppContacts() {
+            this.loadingWAContacts = true;
+            this.selectedContactId = null;
+            this.waContactMessages = [];
+            try {
+                const resp = await fetch(`/api/whatsapp/tenant/${this.tenantId}/messages`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('tenant_token')}` }
+                });
+                if (resp.ok) {
+                    this.waContacts = await resp.json();
+                }
+            } catch (e) { /* ignore */ }
+            this.loadingWAContacts = false;
+        },
+
+        async loadContactMessages(contactId) {
+            try {
+                const resp = await fetch(`/api/whatsapp/tenant/${this.tenantId}/messages/${contactId}`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('tenant_token')}` }
+                });
+                if (resp.ok) {
+                    this.waContactMessages = await resp.json();
+                }
+            } catch (e) { /* ignore */ }
+        },
+
+        copyEmbedCode() {
+            navigator.clipboard.writeText(this.embedCode).then(() => {
+                this.showToast('Embed code copied!');
+            });
+        },
+
+        testChatbot() {
+            const slug = this.tenantSlug || 'w';
+            window.open(`/chat/${slug}?tenant_id=${this.tenantId}`, '_blank');
+        },
+
+        bookOnboarding() {
+            window.open('mailto:sales@scubeinfotech.com.sg?subject=Free Setup Call Request&body=Hi, I would like to book a free 15-minute onboarding call for my SCUBE AI chatbot.', '_blank');
+        },
+
+        async regenerateApiKey() {
+            if (!confirm('This will invalidate your current API key. The chatbot on your website will stop working until you update the embed code. Continue?')) return;
+            try {
+                const resp = await fetch(`/api/tenants/${this.tenantId}/api-keys`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('tenant_token')}`
+                    },
+                    body: JSON.stringify({ name: 'Regenerated Key' })
+                });
+                if (resp.ok) {
+                    this.showToast('New API key generated');
+                    await this.loadApiKey();
+                }
+            } catch (e) {
+                this.showToast('Failed to regenerate key', 'error');
+            }
+        },
+
+        // Calendar methods
+        async loadCalendarStatus() {
+            try {
+                const resp = await fetch(`/api/calendar/status/${this.tenantId}`);
+                if (resp.ok) this.calendarStatus = await resp.json();
+            } catch (e) { /* ignore */ }
+        },
+
+        async loadAvailability() {
+            this.loadingCalendar = true;
+            try {
+                const resp = await fetch(`/api/calendar/availability/${this.tenantId}`);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    this.calendarAvailability = data.slots || [];
+                }
+            } catch (e) { /* ignore */ } finally {
+                this.loadingCalendar = false;
+            }
+        },
+
+        connectCalendar() {
+            const redirectUri = window.location.origin + '/public/dashboard';
+            window.open(`/api/calendar/oauth/url/${this.tenantId}?redirect_uri=${encodeURIComponent(redirectUri)}`, '_blank');
+            this.showToast('Google Calendar authorization opened. Complete the flow and refresh.');
+        },
+
+        async disconnectCalendar() {
+            if (!confirm('Disconnect Google Calendar?')) return;
+            try {
+                const resp = await fetch(`/api/calendar/disconnect/${this.tenantId}`, { method: 'POST' });
+                if (resp.ok) {
+                    this.showToast('Calendar disconnected');
+                    await this.loadCalendarStatus();
+                }
+            } catch (e) { this.showToast('Failed to disconnect', 'error'); }
+        },
+
+        isDayEnabled(day) {
+            return this.calendarAvailability.some(s => s.day_of_week === day);
+        },
+
+        getDayStart(day) {
+            const slot = this.calendarAvailability.find(s => s.day_of_week === day);
+            return slot ? slot.start_time : '09:00';
+        },
+
+        getDayEnd(day) {
+            const slot = this.calendarAvailability.find(s => s.day_of_week === day);
+            return slot ? slot.end_time : '17:00';
+        },
+
+        toggleDay(day) {
+            if (this.isDayEnabled(day)) {
+                this.calendarAvailability = this.calendarAvailability.filter(s => s.day_of_week !== day);
+            } else {
+                this.calendarAvailability.push({ day_of_week: day, start_time: '09:00', end_time: '17:00' });
+            }
+        },
+
+        setDayStart(day, time) {
+            const slot = this.calendarAvailability.find(s => s.day_of_week === day);
+            if (slot) slot.start_time = time;
+        },
+
+        setDayEnd(day, time) {
+            const slot = this.calendarAvailability.find(s => s.day_of_week === day);
+            if (slot) slot.end_time = time;
+        },
+
+        async saveAvailability() {
+            try {
+                const resp = await fetch(`/api/calendar/availability/${this.tenantId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('tenant_token')}`
+                    },
+                    body: JSON.stringify({ slots: this.calendarAvailability }),
+                });
+                if (resp.ok) {
+                    this.showToast('Availability saved');
+                    await this.loadAvailability();
+                } else {
+                    this.showToast('Failed to save availability', 'error');
+                }
+            } catch (e) { this.showToast('Network error', 'error'); }
+        },
+
+        setDefaults() {
+            this.calendarAvailability = [
+                { day_of_week: 0, start_time: '09:00', end_time: '17:00' },
+                { day_of_week: 1, start_time: '09:00', end_time: '17:00' },
+                { day_of_week: 2, start_time: '09:00', end_time: '17:00' },
+                { day_of_week: 3, start_time: '09:00', end_time: '17:00' },
+                { day_of_week: 4, start_time: '09:00', end_time: '17:00' },
+            ];
+        },
+
+        // Billing methods
+        async loadPlans() {
+            this.loadingPlans = true;
+            try {
+                const resp = await fetch('/api/public/plans');
+                if (resp.ok) {
+                    const data = await resp.json();
+                    this.plans = (data.plans || []).filter(p => p.name !== 'trial');
+                }
+            } catch (e) { /* ignore */ } finally {
+                this.loadingPlans = false;
+            }
+        },
+
+        selectPlan(planName) {
+            this.selectedPlan = planName;
+        },
+
+        async payWithStripe() {
+            try {
+                const resp = await fetch(`/api/billing/checkout/${this.tenantId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('tenant_token')}`
+                    },
+                    body: JSON.stringify({ plan_name: this.selectedPlan, payment_method: 'stripe' }),
+                });
+                const data = await resp.json();
+                if (data.checkout_url) {
+                    window.location.href = data.checkout_url;
+                } else {
+                    this.showToast(data.message || 'Stripe not configured. Try PayNow.', 'error');
+                }
+            } catch (e) { this.showToast('Payment failed', 'error'); }
+        },
+
+        async payWithPayNow() {
+            try {
+                const resp = await fetch(`/api/billing/checkout/${this.tenantId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('tenant_token')}`
+                    },
+                    body: JSON.stringify({ plan_name: this.selectedPlan, payment_method: 'paynow' }),
+                });
+                const data = await resp.json();
+                if (data.status === 'success') {
+                    this.paynowData = data;
+                    this.showPayNowModal = true;
+                } else {
+                    this.showToast(data.message || 'Failed to create PayNow invoice', 'error');
+                }
+            } catch (e) { this.showToast('Payment failed', 'error'); }
+        },
+
+        // WhatsApp methods
+        async loadWhatsAppConfig() {
+            try {
+                const resp = await fetch(`/api/whatsapp/configure/${this.tenantId}`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('tenant_token')}` }
+                });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    if (data) {
+                        this.whatsappConfigured = true;
+                        this.waConfig.phone_number_id = data.phone_number_id || '';
+                        this.waConfig.business_account_id = data.business_account_id || '';
+                        if (data.config_metadata && (data.config_metadata.msg91_auth_key || data.config_metadata.msg91_integrated_number)) {
+                            this.waProvider = 'msg91';
+                            this.waConfig.msg91_auth_key = data.config_metadata.msg91_auth_key || '';
+                            this.waConfig.msg91_integrated_number = data.config_metadata.msg91_integrated_number || '';
+                            this.waConfig.msg91_api_endpoint = data.config_metadata.msg91_api_endpoint || '';
+                        } else {
+                            this.waProvider = 'meta';
+                        }
+                        this.waConfig.rate_limit_max_per_minute = data.rate_limit_max_per_minute || 5;
+                        this.waConfig.cooldown_seconds = data.cooldown_seconds || 2;
+                        this.waConfig.response_target_chars = data.response_target_chars || 300;
+                        this.webhookUrl = `${window.location.origin}/api/whatsapp/webhook/${this.tenantId}`;
+                    }
+                }
+            } catch (e) { /* ignore */ }
+        },
+
+        async saveWhatsAppConfig() {
+            if (this.waProvider === 'meta') {
+                if (!this.waConfig.phone_number_id || !this.waConfig.business_account_id || !this.waConfig.access_token) {
+                    this.showToast('All Meta fields are required', 'error');
+                    return;
+                }
+            } else {
+                if (!this.waConfig.msg91_auth_key || !this.waConfig.msg91_integrated_number) {
+                    this.showToast('All MSG91 fields are required', 'error');
+                    return;
+                }
+            }
+            try {
+                const payload = {
+                    phone_number_id: this.waConfig.phone_number_id,
+                    business_account_id: this.waConfig.business_account_id,
+                    access_token: this.waConfig.access_token,
+                    webhook_url: `${window.location.origin}/api/whatsapp/webhook/${this.tenantId}`,
+                    webhook_verify_token: 'scube_wa_verify_2024',
+                    rate_limit_max_per_minute: parseInt(this.waConfig.rate_limit_max_per_minute) || 5,
+                    cooldown_seconds: parseInt(this.waConfig.cooldown_seconds) || 2,
+                    response_target_chars: parseInt(this.waConfig.response_target_chars) || 300,
+                    config_metadata: {}
+                };
+                if (this.waProvider === 'msg91') {
+                    payload.phone_number_id = this.waConfig.msg91_integrated_number || '';
+                    payload.business_account_id = '';
+                    payload.access_token = this.waConfig.msg91_auth_key || '';
+                    payload.config_metadata = {
+                        msg91_auth_key: this.waConfig.msg91_auth_key || '',
+                        msg91_integrated_number: this.waConfig.msg91_integrated_number || '',
+                        msg91_api_endpoint: this.waConfig.msg91_api_endpoint || ''
+                    };
+                }
+                const resp = await fetch(`/api/whatsapp/configure/${this.tenantId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('tenant_token')}`
+                    },
+                    body: JSON.stringify(payload),
+                });
+                if (resp.ok) {
+                    this.showToast('WhatsApp connected successfully');
+                    this.whatsappConfigured = true;
+                    this.waEditing = false;
+                    await this.loadWhatsAppConfig();
+                } else {
+                    const data = await resp.json();
+                    this.showToast(data.detail || 'Failed to connect WhatsApp', 'error');
+                }
+            } catch (e) { this.showToast('Network error', 'error'); }
+        },
+
+        async disconnectWhatsApp() {
+            if (!confirm('Disconnect WhatsApp?')) return;
+            try {
+                const resp = await fetch(`/api/whatsapp/configure/${this.tenantId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('tenant_token')}` }
+                });
+                if (resp.ok) {
+                    this.showToast('WhatsApp disconnected');
+                    this.whatsappConfigured = false;
+                    this.waProvider = 'meta';
+                    this.waEditing = false;
+                    this.waConfig = { phone_number_id: '', business_account_id: '', access_token: '', msg91_auth_key: '', msg91_integrated_number: '', msg91_api_endpoint: '', rate_limit_max_per_minute: 5, cooldown_seconds: 2, response_target_chars: 300 };
+                }
+            } catch (e) { this.showToast('Failed to disconnect', 'error'); }
+        },
+
+        async testWhatsAppConnection() {
+            this.waTesting = true;
+            this.waTestResult = null;
+            try {
+                const resp = await fetch(`/api/whatsapp/test/${this.tenantId}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('tenant_token')}` }
+                });
+                const data = await resp.json();
+                this.waTestResult = {
+                    success: data.success,
+                    message: data.message,
+                    details: data.details || {}
+                };
+                
+                // Update status after test
+                await this.loadWhatsAppStatus();
+                
+                this.showToast(data.success ? 'Connection test successful' : 'Connection test failed', data.success ? 'success' : 'error');
+            } catch (e) {
+                this.waTestResult = {
+                    success: false,
+                    message: 'Test failed: ' + e.message,
+                    details: {}
+                };
+                this.showToast('Connection test failed', 'error');
+            } finally {
+                this.waTesting = false;
+                // Clear test result after 5 seconds
+                setTimeout(() => { this.waTestResult = null; }, 5000);
+            }
+        },
+
+        async loadWhatsAppStatus() {
+            try {
+                const resp = await fetch(`/api/whatsapp/status/${this.tenantId}`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('tenant_token')}` }
+                });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    this.waStatus = data;
+                }
+            } catch (e) {
+                console.error('Failed to load WhatsApp status:', e);
+            }
+        },
+
+        async activateWhatsApp() {
+            if (!confirm('Activate WhatsApp for live customer messages? This will enable the bot to respond to customers.')) return;
+            
+            try {
+                const resp = await fetch(`/api/whatsapp/activate/${this.tenantId}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('tenant_token')}` }
+                });
+                const data = await resp.json();
+                
+                if (data.success) {
+                    this.showToast('WhatsApp activated successfully! Your bot is now live.', 'success');
+                    await this.loadWhatsAppStatus();
+                } else {
+                    this.showToast('Activation failed: ' + data.message, 'error');
+                }
+            } catch (e) {
+                this.showToast('Activation failed', 'error');
+            }
+        },
+
+        showToast(message, type = 'success') {
+            this.toast = { show: true, message, type };
+            setTimeout(() => { this.toast.show = false; }, 3000);
+        },
+
+        async loadAppointments() {
+            this.loadingAppointments = true;
+            try {
+                const r = await fetch(`/api/tenant/crm/appointments`, { headers: { Authorization: 'Bearer ' + localStorage.getItem('tenant_token') } });
+                if (r.ok) this.appointments = await r.json();
+            } catch (e) { /* ignore */ } finally { this.loadingAppointments = false; }
+        },
+
+        async loadCRM() {
+            await Promise.all([this.loadCRMStats(), this.loadCRMLeads(), this.loadCRMContacts(), this.loadCRMTemplates()]);
+        },
+
+        async loadCRMStats() {
+            this.loadingCRMStats = true;
+            try {
+                const r = await fetch(`/api/tenant/crm/stats`, { headers: { Authorization: 'Bearer ' + localStorage.getItem('tenant_token') } });
+                if (r.ok) {
+                    const data = await r.json();
+                    // Merge with defaults to prevent null properties
+                    this.crmStats = { 
+                        total_leads: 0, tentative_leads: 0, confirmed_leads: 0, cancelled_leads: 0,
+                        leads_today: 0, leads_this_week: 0, leads_this_month: 0,
+                        total_contacts: 0, active_contacts: 0, conversion_rate: 0,
+                        ...data 
+                    };
+                }
+            } catch (e) { /* ignore */ } finally { this.loadingCRMStats = false; }
+        },
+
+        async loadCRMLeads() {
+            this.loadingCRMLeads = true;
+            this.crmLeads = []; // Clear first
+            try {
+                const token = localStorage.getItem('tenant_token');
+                console.log('Token exists:', !!token);
+                
+                let url = `/api/tenant/crm/leads?limit=50`;
+                // Only add filters if they have values
+                if (this.leadStatusFilter) url += '&status=' + encodeURIComponent(this.leadStatusFilter);
+                if (this.leadSourceFilter) url += '&source=' + encodeURIComponent(this.leadSourceFilter);
+                if (this.leadIntentFilter) url += '&intent=' + encodeURIComponent(this.leadIntentFilter);
+                
+                console.log('Loading CRM leads from:', url);
+                const r = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
+                console.log('CRM leads response status:', r.status, r.statusText);
+                
+                if (r.ok) {
+                    const data = await r.json();
+                    console.log('CRM leads response:', data);
+                    this.crmLeads = data.leads || [];
+                    console.log('crmLeads set to length:', this.crmLeads.length);
+                } else {
+                    const errorText = await r.text();
+                    console.error('CRM leads error:', r.status, errorText);
+                }
+            } catch (e) { 
+                console.error('CRM leads exception:', e);
+            } finally { 
+                this.loadingCRMLeads = false; 
+                console.log('Loading complete. crmLeads:', this.crmLeads);
+            }
+        },
+
+        async confirmLead(lead) {
+            try {
+                const r = await fetch(`/api/tenant/crm/leads/${lead.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + localStorage.getItem('tenant_token') },
+                    body: JSON.stringify({ action: 'confirm' }),
+                });
+                if (r.ok) {
+                    lead.status = 'confirmed';
+                    this.showToast('Lead confirmed successfully');
+                    await this.loadCRMStats();
+                } else {
+                    const err = await r.json();
+                    this.showToast(err.detail || 'Failed to confirm', 'error');
+                }
+            } catch (e) { this.showToast('Failed to confirm lead', 'error'); }
+        },
+
+        async cancelLead(lead) {
+            try {
+                const r = await fetch(`/api/tenant/crm/leads/${lead.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + localStorage.getItem('tenant_token') },
+                    body: JSON.stringify({ action: 'cancel' }),
+                });
+                if (r.ok) {
+                    lead.status = 'cancelled';
+                    this.showToast('Lead cancelled');
+                    await this.loadCRMStats();
+                } else {
+                    const err = await r.json();
+                    this.showToast(err.detail || 'Failed to cancel', 'error');
+                }
+            } catch (e) { this.showToast('Failed to cancel lead', 'error'); }
+        },
+
+        async loadCRMContacts() {
+            this.loadingCRMContacts = true;
+            try {
+                let url = `/api/tenant/crm/contacts?limit=50`;
+                if (this.crmSearch) url += '&search=' + encodeURIComponent(this.crmSearch);
+                if (this.crmTagFilter) url += '&tag=' + encodeURIComponent(this.crmTagFilter);
+                const r = await fetch(url, { headers: { Authorization: 'Bearer ' + localStorage.getItem('tenant_token') } });
+                if (r.ok) {
+                    const data = await r.json();
+                    this.crmContacts = data.contacts || [];
+                }
+            } catch (e) { /* ignore */ } finally { this.loadingCRMContacts = false; }
+        },
+
+        async loadCRMTemplates() {
+            this.loadingCRMTemplates = true;
+            try {
+                const r = await fetch(`/api/tenant/crm/templates`, { headers: { Authorization: 'Bearer ' + localStorage.getItem('tenant_token') } });
+                if (r.ok) this.crmTemplates = await r.json();
+            } catch (e) { /* ignore */ } finally { this.loadingCRMTemplates = false; }
+        },
+
+        openCRMContact(contact) {
+            this.showToast(`Contact: ${contact.contact_name || contact.phone_number}`, 'info');
+        },
+
+        async toggleTemplate(tpl) {
+            try {
+                const r = await fetch(`/api/tenant/crm/templates/${tpl.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + localStorage.getItem('tenant_token') },
+                    body: JSON.stringify({ is_active: !tpl.is_active }),
+                });
+                if (r.ok) {
+                    tpl.is_active = !tpl.is_active;
+                    this.showToast(`Template ${tpl.is_active ? 'enabled' : 'disabled'}`, 'success');
+                }
+            } catch (e) { /* ignore */ }
+        },
+
+        formatDate(utcStr) {
+            if (!utcStr) return '';
+            try {
+                const utcDate = new Date(utcStr);
+                const sgTime = new Date(utcDate.getTime() + (8 * 60 * 60 * 1000));
+                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                return `${months[sgTime.getUTCMonth()]} ${sgTime.getUTCDate()}`;
+            } catch { return utcStr; }
+        },
+
+        toggleTheme() {
+            this.theme = this.theme === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('theme', this.theme);
+            if (this.theme === 'light') {
+                document.documentElement.setAttribute('data-theme', 'light');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
+        },
+
+        async changePassword() {
+            if (!this.pwdForm.current || !this.pwdForm.newPwd || !this.pwdForm.confirm) {
+                this.pwdError = 'All fields are required';
+                return;
+            }
+            if (this.pwdForm.newPwd !== this.pwdForm.confirm) {
+                this.pwdError = 'New passwords do not match';
+                return;
+            }
+            if (this.pwdForm.newPwd.length < 6) {
+                this.pwdError = 'New password must be at least 6 characters';
+                return;
+            }
+            this.pwdLoading = true;
+            this.pwdError = '';
+            try {
+                const resp = await fetch('/api/admin/reset-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('tenant_token')}`
+                    },
+                    body: JSON.stringify({
+                        current_password: this.pwdForm.current,
+                        new_password: this.pwdForm.newPwd
+                    })
+                });
+                if (resp.ok) {
+                    this.showToast('Password updated successfully');
+                    this.showChangePassword = false;
+                    this.pwdForm = { current: '', newPwd: '', confirm: '' };
+                } else {
+                    const err = await resp.json();
+                    this.pwdError = err.detail || 'Failed to update password';
+                }
+            } catch (e) {
+                this.pwdError = 'Network error. Please try again.';
+            } finally {
+                this.pwdLoading = false;
+            }
+        },
+
+        logout() {
+            localStorage.removeItem('tenant_token');
+            localStorage.removeItem('tenant_id');
+            localStorage.removeItem('tenant_name');
+            localStorage.removeItem('tenant_slug');
+            window.location.href = '/public/login';
+        }
+    };
+}
+</script>
+
+<!-- Change Password Modal -->
+<div x-show="showChangePassword" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center p-4" style="background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);">
+    <div @click.outside="showChangePassword = false" class="w-full max-w-md rounded-2xl shadow-2xl overflow-hidden" :class="theme === 'dark' ? 'bg-gray-900 border border-white/10' : 'bg-white border border-gray-200'">
+        <div class="px-6 py-4 border-b" :class="theme === 'dark' ? 'border-white/10' : 'border-gray-200'">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-semibold" :class="theme === 'dark' ? 'text-white' : 'text-gray-900'">Change Password</h3>
+                <button @click="showChangePassword = false" class="p-1 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+        </div>
+        <div class="px-6 py-4 space-y-4">
+            <div x-show="pwdError" x-cloak class="p-3 rounded-lg text-sm bg-red-500/10 border border-red-500/20 text-red-400" x-text="pwdError"></div>
+            <div>
+                <label class="block text-sm font-medium mb-1" :class="theme === 'dark' ? 'text-gray-300' : 'text-gray-700'">Current Password</label>
+                <input type="password" x-model="pwdForm.current" class="w-full px-3 py-2 rounded-lg border text-sm" :class="theme === 'dark' ? 'bg-gray-800 border-white/10 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'" placeholder="Enter current password">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1" :class="theme === 'dark' ? 'text-gray-300' : 'text-gray-700'">New Password</label>
+                <input type="password" x-model="pwdForm.newPwd" class="w-full px-3 py-2 rounded-lg border text-sm" :class="theme === 'dark' ? 'bg-gray-800 border-white/10 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'" placeholder="Enter new password">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1" :class="theme === 'dark' ? 'text-gray-300' : 'text-gray-700'">Confirm New Password</label>
+                <input type="password" x-model="pwdForm.confirm" class="w-full px-3 py-2 rounded-lg border text-sm" :class="theme === 'dark' ? 'bg-gray-800 border-white/10 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'" placeholder="Confirm new password">
+            </div>
+        </div>
+        <div class="px-6 py-4 border-t flex justify-end gap-3" :class="theme === 'dark' ? 'border-white/10' : 'border-gray-200'">
+            <button @click="showChangePassword = false" class="px-4 py-2 rounded-lg text-sm font-medium" :class="theme === 'dark' ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'">Cancel</button>
+            <button @click="changePassword()" :disabled="pwdLoading" class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                <svg x-show="pwdLoading" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                <span x-text="pwdLoading ? 'Updating...' : 'Update Password'"></span>
+            </button>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

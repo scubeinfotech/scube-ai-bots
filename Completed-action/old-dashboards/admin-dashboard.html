@@ -1,0 +1,1376 @@
+<!-- This file is deprecated. The admin dashboard UI is now located at backend/static/admin-dashboard.html. This file is no longer used. -->
+        }
+
+        .nav-section {
+            margin-bottom: 32px;
+        }
+
+        .nav-section-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #94a3b8;
+            margin-bottom: 12px;
+            padding-left: 12px;
+        }
+
+        .nav-item {
+            padding: 12px 12px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .nav-item:hover {
+            background: #334155;
+        }
+
+        .nav-item.active {
+            background: #3b82f6;
+            font-weight: 600;
+        }
+
+        /* Main content */
+        .main {
+            padding: 32px;
+            overflow-y: auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #6b7280;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .stat-change {
+            font-size: 12px;
+            color: #059669;
+            margin-top: 8px;
+        }
+
+        /* Tables and Content */
+        .section {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #6b7280;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        td {
+            padding: 14px 12px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        tr:hover {
+            background: #f9fafb;
+        }
+
+        tr[onclick] {
+            cursor: pointer;
+        }
+
+        tr[onclick]:hover {
+            background: #dbeafe;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .conversation-item {
+            background: #f9fafb;
+            border-left: 4px solid #3b82f6;
+            padding: 16px;
+            margin-bottom: 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .conversation-item:hover {
+            background: #f3f4f6;
+            border-left-color: #2563eb;
+        }
+
+        .message {
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .message.user {
+            background: #dbeafe;
+            color: #1e40af;
+            margin-left: 40px;
+        }
+
+        .message.assistant {
+            background: #e5e7eb;
+            color: #1f2937;
+            margin-right: 40px;
+        }
+
+        .document-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .document-info {
+            flex: 1;
+        }
+
+        .document-name {
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .document-meta {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #1f2937;
+        }
+
+        .btn-danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        input, select {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 32px;
+            border-radius: 8px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .close-btn {
+            float: right;
+            font-size: 24px;
+            cursor: pointer;
+            color: #6b7280;
+        }
+
+        .tab-container {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .tab {
+            padding: 12px 0;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            font-weight: 600;
+            color: #6b7280;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            color: #3b82f6;
+            border-bottom-color: #3b82f6;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">🤖 LLM Admin</div>
+            
+            <div class="nav-section">
+                <div class="nav-section-title">Main</div>
+                <div class="nav-item active" onclick="switchTab('dashboard')">📊 Dashboard</div>
+                <div class="nav-item" onclick="switchTab('analytics')">📈 Analytics</div>
+                <div class="nav-item" onclick="switchTab('conversations')">💬 Conversations</div>
+                <div class="nav-item" onclick="switchTab('documents')">📚 Documents</div>
+            </div>
+            
+            <div class="nav-section">
+                <div class="nav-section-title">Management</div>
+                <div class="nav-item" onclick="switchTab('tenants')">🏢 Manage Tenants</div>
+                <div class="nav-item" onclick="switchTab('agreements')">📋 Agreements</div>
+                <div class="nav-item" onclick="switchTab('unanswered')">❓ Unanswered</div>
+            </div>
+            
+            <div class="nav-section">
+                <div class="nav-section-title">System</div>
+                <div class="nav-item" onclick="switchTab('maintenance')">🔧 Maintenance</div>
+                <div class="nav-item" onclick="switchTab('settings')">⚙️ Settings</div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main">
+            <!-- Dashboard Tab -->
+            <div id="dashboard" class="tab-content active">
+                <div class="header">
+                    <h1>📊 Analytics Dashboard</h1>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Total Active Tenants</div>
+                        <div class="stat-value">2</div>
+                        <div class="stat-change">↑ Scube, Rapas</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Avg Lead Engagement</div>
+                        <div class="stat-value">6.4%</div>
+                        <div class="stat-change">↑ Up 2% this week</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Avg Conversion Rate</div>
+                        <div class="stat-value">25.0%</div>
+                        <div class="stat-change">↓ Down 3% this week</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Avg Unanswered Rate</div>
+                        <div class="stat-value">5.1%</div>
+                        <div class="stat-change">↓ Down 1.2% this week</div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">🎯 Engagement Distribution</div>
+                    <p style="color: #6b7280; margin-bottom: 16px;">Engagement by tenant over the last 30 days</p>
+                    <canvas id="engagementChart" style="max-height: 300px;"></canvas>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">❓ Unanswered Rate by Tenant</div>
+                    <canvas id="unansweredChart" style="max-height: 300px;"></canvas>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">📊 Customer Performance</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                       <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px; margin-right: 4px;" onclick="showEditTenant('Scube Infotech Pte Ltd', 'scube.com', 'https://scube.com', 'fb8a4ec0-e463-4678-8178-32bdb73a')">Edit</button>
+                                       <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px; margin-right: 4px;">Select</button>
+                                    <button class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;" onclick="deactivateTenant('20bd44e9-3fd8-47d3-9f94-15209774ff81')">Deactivate</button>
+                                <th>Sessions</th>
+                                <th>Messages</th>
+                                <th>Engagement</th>
+                                <th>Conversion</th>
+                                <th>Unanswered</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                       <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px; margin-right: 4px;" onclick="showEditTenant('Rapas Engineering Services Pte Ltd', 'rapas.com.sg', 'https://rapas.com.sg', 'c66e96d3-999c-4746-b11c-1758a9c2e982')">Edit</button>
+                                       <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px; margin-right: 4px;">Select</button>
+                                    <button class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;" onclick="deactivateTenant('fb8a4ec0-e463-4678-8178-32bdb73a')">Deactivate</button>
+                                <td>76</td>
+                                <td>156</td>
+                                <td><span class="badge badge-success">12.8%</span></td>
+                                <td><span class="badge badge-success">50.0%</span></td>
+                                <td><span class="badge badge-warning">10.3%</span></td>
+                            </tr>
+                            <tr>
+                                       <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px; margin-right: 4px;" onclick="showEditTenant('SDS Foods', 'sdsfoods.com', 'https://sdsfoods.com', '20bd44e9-3fd8-47d3-9f94-15209774ff81')">Edit</button>
+                                       <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px; margin-right: 4px;">Select</button>
+                                    <button class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;" onclick="deactivateTenant('c66e96d3-999c-4746-b11c-1758a9c2e982')">Deactivate</button>
+                                // Deactivate Tenant
+                                function deactivateTenant(tenantId) {
+                                    if (!confirm('Are you sure you want to deactivate this tenant?')) return;
+                                    fetch(`/api/tenants/${tenantId}`, {
+                                        method: 'PATCH',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ is_active: false })
+                                    })
+                                    .then(res => {
+                                        if (!res.ok) throw new Error('Failed to deactivate tenant');
+                                        return res.json();
+                                    })
+                                    .then(data => {
+                                        alert('Tenant deactivated!');
+                                        // Optionally, refresh tenant list here
+                                    })
+                                    .catch(err => {
+                                        alert('Error deactivating tenant: ' + err.message);
+                                    });
+                                }
+                                <td>35</td>
+                                <td>70</td>
+                                <td><span class="badge badge-warning">0.0%</span></td>
+                                <td><span class="badge badge-warning">0.0%</span></td>
+                                <td><span class="badge badge-success">0.0%</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Conversations Tab -->
+            <div id="conversations" class="tab-content">
+                <div class="header">
+                    <h1>💬 Conversations</h1>
+                </div>
+
+                <div class="section">
+                    <div class="input-group">
+                        <select id="tenantSelect">
+                            <option>Select Tenant...</option>
+                            <option value="scube">Scube Infotech</option>
+                            <option value="rapas">Rapas Engineering</option>
+                        </select>
+                        <input type="text" placeholder="Search conversations...">
+                    </div>
+
+                    <div class="conversation-item" onclick="showConversation()">
+                        <div style="font-weight: 600; margin-bottom: 8px;">Session #ABC123 - User: customer@scube.com</div>
+                        <div style="font-size: 12px; color: #6b7280;">Started: 2 hours ago | 12 messages</div>
+                        <div style="margin-top: 8px; color: #1f2937;">👤: "How do I setup the deployment?"</div>
+                        <div style="color: #1f2937;">🤖: "I can help you with deployment setup..."</div>
+                    </div>
+
+                    <div class="conversation-item">
+                        <div style="font-weight: 600; margin-bottom: 8px;">Session #DEF456 - User: support@scube.com</div>
+                        <div style="font-size: 12px; color: #6b7280;">Started: 5 hours ago | 8 messages</div>
+                        <div style="margin-top: 8px; color: #1f2937;">👤: "What are the API limits?"</div>
+                        <div style="color: #1f2937;">🤖: "The API has the following limits:..."</div>
+                    </div>
+                </div>
+
+                <div id="conversationModal" class="modal">
+                    <div class="modal-content">
+                        <span class="close-btn" onclick="closeConversation()">✕</span>
+                        <div class="modal-header">Conversation Transcript</div>
+                        
+                        <div class="message user">
+                            How do I setup the deployment?
+                        </div>
+                        <div class="message assistant">
+                            I can help you with deployment setup. Here are the steps:
+                            1. Clone the repository
+                            2. Install dependencies
+                            3. Configure environment variables
+                            4. Run the deployment script
+                        </div>
+                        
+                        <div class="message user">
+                            Do I need a GPU?
+                        </div>
+                        <div class="message assistant">
+                            A GPU is recommended but not required. Our system can run on CPU but will be slower.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Query Detail Modal -->
+                <div id="queryDetailModal" class="modal">
+                    <div class="modal-content">
+                        <span class="close-btn" onclick="closeQueryDetail()">✕</span>
+                        <div class="modal-header">❓ Query Details & Training Options</div>
+                        
+                        <!-- Query Information -->
+                        <div style="background: #f9fafb; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <span style="font-weight: 600; color: #6b7280; font-size: 12px; text-transform: uppercase;">Query</span>
+                                <span id="queryTenant" style="font-size: 12px; color: #6b7280;"></span>
+                            </div>
+                            <div id="queryText" style="font-size: 16px; color: #1f2937; line-height: 1.6; margin-bottom: 16px;"></div>
+                            
+                            <div style="display: flex; gap: 12px; align-items: center;">
+                                <div>
+                                    <span style="font-size: 12px; color: #6b7280;">Confidence Score:</span>
+                                    <span id="queryConfidence" class="badge" style="margin-left: 8px;"></span>
+                                </div>
+                                <div>
+                                    <span style="font-size: 12px; color: #6b7280;">Status:</span>
+                                    <span id="queryStatus" class="badge" style="margin-left: 8px;"></span>
+                                </div>
+                                <div>
+                                    <span id="trainingStatus" style="font-size: 12px; color: #059669;"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Response -->
+                        <div style="background: #e5e7eb; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+                            <div style="font-weight: 600; color: #6b7280; font-size: 12px; text-transform: uppercase; margin-bottom: 12px;">Response Given</div>
+                            <div id="queryResponse" style="font-size: 14px; color: #1f2937; line-height: 1.6;"></div>
+                        </div>
+
+                        <!-- Tenants Tab -->
+                        <div id="tenants" class="tab-content">
+                            <div class="header">
+                                <h1>🏢 Manage Tenants</h1>
+                            </div>
+
+
+                            <div class="section">
+                                <div style="margin-bottom: 20px; display: flex; gap: 12px;">
+                                    <button class="btn btn-primary" onclick="showAddTenant()">+ Add New Tenant</button>
+                                    <button class="btn btn-secondary" onclick="showCorsChecklist()">CORS/Domain Checklist</button>
+                                </div>
+
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Domain</th>
+                                            <th>Status</th>
+                                            <th>Created</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><strong>Scube Infotech Pte Ltd</strong></td>
+                                            <td>scube.com</td>
+                                            <td><span class="badge badge-success">Active</span></td>
+                                            <td>2024-02-15</td>
+                                            <td>
+                                                <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="showWidgetCode('scube', 'scube.com', 'YOUR_API_KEY_SCUBE')">Widget Code</button>
+                                                <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="showApiKey('Scube Infotech Pte Ltd', 'scube-tenant-id', 'YOUR_API_KEY_SCUBE')">API Key</button>
+                                                <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="showVectorStatus('Scube Infotech Pte Ltd', 12, 10, 2, 'Healthy')">Vector Status</button>
+                                                <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="showEditTenant('Scube Infotech Pte Ltd', 'scube.com', 'https://scube.com')">Edit</button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Rapas Engineering Services</strong></td>
+                                            <td>rapas.com.sg</td>
+                                            <td><span class="badge badge-success">Active</span></td>
+                                            <td>2024-02-10</td>
+                                            <td>
+                                                <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="showWidgetCode('rapas', 'rapas.com.sg', 'YOUR_API_KEY_RAPAS')">Widget Code</button>
+                                                <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="showApiKey('Rapas Engineering Services', 'c66e96d3-999c-4746-b11c-1758a9c2e982', 'YOUR_API_KEY_RAPAS')">API Key</button>
+                                                <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="showVectorStatus('Rapas Engineering Services', 8, 7, 1, 'Warning')">Vector Status</button>
+                                                <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="showEditTenant('Rapas Engineering Services', 'rapas.com.sg', 'https://rapas.com.sg')">Edit</button>
+                                                                                                                                // Edit Tenant Modal
+                                                                                                                                function showEditTenant(name, domain, websiteUrl) {
+                                                                                                                                    let modal = document.createElement('div');
+                                                                                                                                    modal.className = 'modal active';
+                                                                                                                                    modal.id = 'editTenantModal';
+                                                                                                                                    modal.innerHTML = `
+                                                                                                                                        <div class="modal-content" style="max-width: 480px;">
+                                                                                                                                            <span class="close-btn" onclick="closeEditTenant()">✕</span>
+                                                                                                                                            <div class="modal-header">Edit Tenant</div>
+                                                                                                                                            <div style="margin-bottom: 16px; color: #6b7280; font-size: 13px;">Update tenant details. Website URL is used for crawling and widget integration.</div>
+                                                                                                                                            <div style="margin-bottom: 12px;">
+                                                                                                                                                <label style="font-size: 13px; color: #6b7280;">Tenant Name:</label>
+                                                                                                                                                <input id="editTenantNameInput" type="text" value="${name}" style="width: 100%; padding: 8px; margin-bottom: 8px; border-radius: 6px; border: 1px solid #d1d5db;">
+                                                                                                                                                <label style="font-size: 13px; color: #6b7280;">Domain:</label>
+                                                                                                                                                <input id="editTenantDomainInput" type="text" value="${domain}" style="width: 100%; padding: 8px; margin-bottom: 8px; border-radius: 6px; border: 1px solid #d1d5db;">
+                                                                                                                                                <label style="font-size: 13px; color: #6b7280;">Website URL:</label>
+                                                                                                                                                <input id="editTenantWebsiteUrlInput" type="text" value="${websiteUrl}" style="width: 100%; padding: 8px; margin-bottom: 8px; border-radius: 6px; border: 1px solid #d1d5db;">
+                                                                                                                                            </div>
+                                                                                                                                            <button class="btn btn-primary" onclick="saveEditTenant()">Save Changes</button>
+                                                                                                                                        </div>
+                                                                                                                                    `;
+                                                                                                                                    document.body.appendChild(modal);
+                                                                                                                                }
+                                                                                                                                function closeEditTenant() {
+                                                                                                                                    let modal = document.getElementById('editTenantModal');
+                                                                                                                                    if (modal) document.body.removeChild(modal);
+                                                                                                                                }
+                                                                                                                                function saveEditTenant() {
+                                                                                                                                    let name = document.getElementById('editTenantNameInput').value;
+                                                                                                                                    let domain = document.getElementById('editTenantDomainInput').value;
+                                                                                                                                    let websiteUrl = document.getElementById('editTenantWebsiteUrlInput').value;
+                                                                                                                                    if (!name || !domain || !websiteUrl) {
+                                                                                                                                        alert('Please fill all fields.');
+                                                                                                                                        return;
+                                                                                                                                    }
+                                                                                                                                    alert('Tenant updated! (Demo only)\nName: ' + name + '\nDomain: ' + domain + '\nWebsite URL: ' + websiteUrl);
+                                                                                                                                    closeEditTenant();
+                                                                                                                                    // Optionally, refresh tenant list
+                                                                                                                                }
+                                                                                                    <!-- Vector Indexing Status Modal -->
+                                                                                                    <div id="vectorStatusModal" class="modal">
+                                                                                                        <div class="modal-content" style="max-width: 440px;">
+                                                                                                            <span class="close-btn" onclick="closeVectorStatus()">✕</span>
+                                                                                                            <div class="modal-header">Vector Indexing Status</div>
+                                                                                                            <div style="margin-bottom: 10px; color: #6b7280; font-size: 13px;">
+                                                                                                                Shows the current document and vector index status for this tenant. Useful for troubleshooting retrieval and onboarding.
+                                                                                                            </div>
+                                                                                                            <div style="margin-bottom: 12px;">
+                                                                                                                <strong>Tenant:</strong> <span id="vectorTenantName" style="color: #1f2937;"></span>
+                                                                                                            </div>
+                                                                                                            <table style="width: 100%; font-size: 13px; margin-bottom: 16px;">
+                                                                                                                <tr><td>Documents Uploaded</td><td id="vectorDocsUploaded" style="text-align: right;"></td></tr>
+                                                                                                                <tr><td>Documents Indexed</td><td id="vectorDocsIndexed" style="text-align: right;"></td></tr>
+                                                                                                                <tr><td>Pending Indexing</td><td id="vectorDocsPending" style="text-align: right;"></td></tr>
+                                                                                                                <tr><td>Status</td><td id="vectorStatusValue" style="text-align: right;"></td></tr>
+                                                                                                            </table>
+                                                                                                            <div id="vectorStatusTip" style="font-size: 13px; color: #059669;"></div>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                    <script>
+                                                                                                    function showVectorStatus(tenantName, docsUploaded, docsIndexed, docsPending, status) {
+                                                                                                        document.getElementById('vectorTenantName').textContent = tenantName;
+                                                                                                        document.getElementById('vectorDocsUploaded').textContent = docsUploaded;
+                                                                                                        document.getElementById('vectorDocsIndexed').textContent = docsIndexed;
+                                                                                                        document.getElementById('vectorDocsPending').textContent = docsPending;
+                                                                                                        document.getElementById('vectorStatusValue').textContent = status;
+                                                                                                        let tip = '';
+                                                                                                        if (status === 'Healthy') tip = '✓ All documents are indexed and ready for retrieval.';
+                                                                                                        else if (status === 'Warning') tip = '⚠️ Some documents are pending indexing. Check document processing.';
+                                                                                                        else tip = '';
+                                                                                                        document.getElementById('vectorStatusTip').textContent = tip;
+                                                                                                        document.getElementById('vectorStatusModal').classList.add('active');
+                                                                                                    }
+                                                                                                    function closeVectorStatus() {
+                                                                                                        document.getElementById('vectorStatusModal').classList.remove('active');
+                                                                                                    }
+                                                                                                    </script>
+                                                                        <!-- API Key Management Modal -->
+                                                                        <div id="apiKeyModal" class="modal">
+                                                                            <div class="modal-content" style="max-width: 480px;">
+                                                                                <span class="close-btn" onclick="closeApiKey()">✕</span>
+                                                                                <div class="modal-header">API Key Management</div>
+                                                                                <div style="margin-bottom: 10px; color: #6b7280; font-size: 13px;">
+                                                                                    View, copy, or regenerate the API key for this tenant. Share securely with the customer only.
+                                                                                </div>
+                                                                                <div style="margin-bottom: 12px;">
+                                                                                    <strong>Tenant:</strong> <span id="apiKeyTenantName" style="color: #1f2937;"></span><br>
+                                                                                    <strong>Tenant ID:</strong> <span id="apiKeyTenantId" style="color: #6b7280; font-size: 13px;"></span>
+                                                                                </div>
+                                                                                <div style="margin-bottom: 16px;">
+                                                                                    <label for="apiKeyValue" style="font-size: 13px; color: #6b7280;">API Key:</label>
+                                                                                    <input id="apiKeyValue" type="text" style="width: 100%; font-family: monospace; font-size: 13px; padding: 8px; border-radius: 6px; border: 1px solid #d1d5db; margin-bottom: 8px;" readonly>
+                                                                                    <button class="btn btn-primary" onclick="copyApiKey()" style="margin-right: 8px;">Copy</button>
+                                                                                    <button class="btn btn-danger" onclick="regenerateApiKey()">Regenerate</button>
+                                                                                </div>
+                                                                                <div id="apiKeyStatus" style="font-size: 13px; color: #059669;"></div>
+                                                                            </div>
+                                                                        </div>
+                                                                        <script>
+                                                                        function showApiKey(tenantName, tenantId, apiKey) {
+                                                                            document.getElementById('apiKeyTenantName').textContent = tenantName;
+                                                                            document.getElementById('apiKeyTenantId').textContent = tenantId;
+                                                                            document.getElementById('apiKeyValue').value = apiKey;
+                                                                            document.getElementById('apiKeyStatus').textContent = '';
+                                                                            document.getElementById('apiKeyModal').classList.add('active');
+                                                                        }
+                                                                        function closeApiKey() {
+                                                                            document.getElementById('apiKeyModal').classList.remove('active');
+                                                                        }
+                                                                        function copyApiKey() {
+                                                                            var input = document.getElementById('apiKeyValue');
+                                                                            input.select();
+                                                                            document.execCommand('copy');
+                                                                            document.getElementById('apiKeyStatus').textContent = '✓ API key copied to clipboard!';
+                                                                        }
+                                                                        function regenerateApiKey() {
+                                                                            // In production, call backend to regenerate and return new key
+                                                                            var newKey = 'NEW_API_KEY_' + Math.random().toString(36).substring(2, 12).toUpperCase();
+                                                                            document.getElementById('apiKeyValue').value = newKey;
+                                                                            document.getElementById('apiKeyStatus').textContent = '✓ API key regenerated (demo only). Save and share securely.';
+                                                                        }
+                                                                        </script>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- CORS/Domain Checklist Modal -->
+                            <div id="corsChecklistModal" class="modal">
+                                <div class="modal-content" style="max-width: 520px;">
+                                    <span class="close-btn" onclick="closeCorsChecklist()">✕</span>
+                                    <div class="modal-header">CORS & Domain Setup Checklist</div>
+                                    <div style="margin-bottom: 16px; color: #6b7280; font-size: 13px;">
+                                        Ensure these steps are completed for every new tenant to avoid widget/API integration issues:
+                                    </div>
+                                    <ul style="font-size: 14px; color: #1f2937; margin-bottom: 18px; padding-left: 20px;">
+                                        <li style="margin-bottom: 10px;">✅ <strong>Domain Whitelisting:</strong> Add the tenant's exact domain (e.g., <code>https://customer.com</code>) to the backend <code>ALLOWED_ORIGINS</code> CORS setting.</li>
+                                        <li style="margin-bottom: 10px;">✅ <strong>HTTPS Only:</strong> Always use <code>https://</code> for both widget and API URLs. Mixed content (HTTP/HTTPS) will break integration.</li>
+                                        <li style="margin-bottom: 10px;">✅ <strong>DNS Propagation:</strong> Ensure the tenant's domain is live and resolves to their website before onboarding.</li>
+                                        <li style="margin-bottom: 10px;">✅ <strong>API Key:</strong> Generate and securely share a unique API key for the tenant.</li>
+                                        <li style="margin-bottom: 10px;">✅ <strong>Widget Script:</strong> Provide the correct widget code snippet with the tenant's domain and API key.</li>
+                                        <li style="margin-bottom: 10px;">✅ <strong>Test Integration:</strong> Use browser DevTools and <code>curl</code> to verify CORS headers and API access from the tenant's site.</li>
+                                        <li style="margin-bottom: 10px;">✅ <strong>Update Documentation:</strong> Record the onboarding in your admin docs for future reference.</li>
+                                    </ul>
+                                    <div style="font-size: 13px; color: #6b7280;">
+                                        <strong>Tip:</strong> If you see CORS errors, double-check the domain and protocol in <code>ALLOWED_ORIGINS</code> and ensure the widget is loaded over HTTPS.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <script>
+                            function showCorsChecklist() {
+                                document.getElementById('corsChecklistModal').classList.add('active');
+                            }
+                            function closeCorsChecklist() {
+                                document.getElementById('corsChecklistModal').classList.remove('active');
+                            }
+                            </script>
+
+                            <!-- Widget Code Modal -->
+                            <div id="widgetCodeModal" class="modal">
+                                <div class="modal-content">
+                                    <span class="close-btn" onclick="closeWidgetCode()">✕</span>
+                                    <div class="modal-header">Widget Integration Code</div>
+                                    <div style="margin-bottom: 12px; color: #6b7280; font-size: 13px;">Copy and paste this code into your website. Always use HTTPS for security.</div>
+                                    <textarea id="widgetCodeOutput" rows="7" style="width: 100%; font-family: monospace; font-size: 13px; padding: 10px; border-radius: 6px; border: 1px solid #d1d5db; margin-bottom: 16px;" readonly></textarea>
+                                    <button class="btn btn-primary" onclick="copyWidgetCode()">Copy Code</button>
+                                </div>
+                            </div>
+                            <script>
+                            function showWidgetCode(tenantSlug, domain, apiKey) {
+                                // You should fetch the real API key and tenantId from your backend in production
+                                var apiUrl = 'https://' + domain;
+                                var tenantId = tenantSlug === 'rapas' ? 'c66e96d3-999c-4746-b11c-1758a9c2e982' : 'scube-tenant-id';
+                                var code = `<script src="${apiUrl}/static/widget.js"></script>\n<script>\n  LLMChatbot.init({\n    apiUrl: '${apiUrl}',\n    tenantId: '${tenantId}',\n    apiKey: '${apiKey}'\n  });\n<\/script>`;
+                                document.getElementById('widgetCodeOutput').value = code;
+                                document.getElementById('widgetCodeModal').classList.add('active');
+                            }
+                            function closeWidgetCode() {
+                                document.getElementById('widgetCodeModal').classList.remove('active');
+                            }
+                            function copyWidgetCode() {
+                                var textarea = document.getElementById('widgetCodeOutput');
+                                textarea.select();
+                                document.execCommand('copy');
+                            }
+                            </script>
+                                            Go to Documents
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Mark as Resolved -->
+                                <div style="background: #fef3c7; padding: 16px; border-radius: 8px; border: 2px solid #f59e0b;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <div>
+                                            <div style="font-weight: 600; color: #92400e; margin-bottom: 4px;">
+                                                ✅ Mark as Resolved
+                                            </div>
+                                            <div style="font-size: 12px; color: #92400e;">
+                                                Close this query (no further action needed)
+                                            </div>
+                                        </div>
+                                        <button id="resolveBtn" class="btn" style="background: #f59e0b; color: white;" onclick="resolveQuery()">
+                                            Mark Resolved
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="margin-top: 16px; padding: 12px; background: #f3f4f6; border-radius: 6px; font-size: 12px; color: #6b7280;">
+                                💡 <strong>Tip:</strong> Low confidence scores (&lt;0.5) indicate the LLM wasn't confident about its response. 
+                                Consider uploading relevant documentation or marking for training.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Documents Tab -->
+            <div id="documents" class="tab-content">
+                <div class="header">
+                    <h1>📚 Documents & Knowledge Base</h1>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Upload Document</div>
+                    <div class="input-group">
+                        <select id="tenantSelect2" onchange="updateCrawlWebsiteUrl()">
+                            <option value="">Select Tenant...</option>
+                            <option value="scube" data-url="https://scube.com">Scube Infotech</option>
+                            <option value="rapas" data-url="https://rapas.com.sg">Rapas Engineering</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <input type="file" id="fileInput" placeholder="Choose file...">
+                        <button class="btn btn-primary">Upload</button>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Website Crawl</div>
+                    <div style="margin-bottom: 10px; color: #6b7280; font-size: 13px;">
+                        Automatically scrapes and indexes all public pages of the tenant's website so the bot can answer questions from real site content.
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <strong>Stage:</strong> <span id="crawlStage">ready</span> |
+                        <strong>Crawled pages:</strong> <span id="crawlPages">1</span>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <strong>URL:</strong> <span id="crawlWebsiteUrl">(select tenant)</span>
+                    </div>
+                    <button class="btn btn-primary" onclick="triggerCrawl()">🚀 Trigger Crawl</button>
+                    <div id="crawlStatusMsg" style="margin-top: 10px; color: #059669; font-size: 13px;"></div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Scube Knowledge Base</div>
+                    <!-- ...existing code for document items... -->
+                </div>
+            </div>
+
+            <script>
+            // Update crawl website URL display based on selected tenant
+            function updateCrawlWebsiteUrl() {
+                var select = document.getElementById('tenantSelect2');
+                var url = '';
+                if (select.value === 'scube') url = 'https://scube.com';
+                else if (select.value === 'rapas') url = 'https://rapas.com.sg';
+                document.getElementById('crawlWebsiteUrl').textContent = url || '(select tenant)';
+            }
+            // Simulate crawl trigger and status update
+            function triggerCrawl() {
+                var url = document.getElementById('crawlWebsiteUrl').textContent;
+                if (!url || url === '(select tenant)') {
+                    alert('Please select a tenant to crawl.');
+                    return;
+                }
+                document.getElementById('crawlStage').textContent = 'crawling';
+                document.getElementById('crawlStatusMsg').textContent = 'Crawl started for ' + url + '...';
+                setTimeout(function() {
+                    document.getElementById('crawlStage').textContent = 'ready';
+                    document.getElementById('crawlPages').textContent = '1';
+                    document.getElementById('crawlStatusMsg').textContent = '✓ Crawl completed. Indexed 1 page(s) from ' + url + '.';
+                }, 2000);
+            }
+            </script>
+
+            <!-- Unanswered Tab -->
+            <div id="unanswered" class="tab-content">
+                <div class="header">
+                    <h1>❓ Unanswered Queries</h1>
+                </div>
+
+                <div class="section">
+                    <div class="input-group">
+                        <select id="tenantSelect3">
+                            <option>All Tenants</option>
+                            <option value="scube">Scube Infotech</option>
+                            <option value="rapas">Rapas Engineering</option>
+                        </select>
+                        <select>
+                            <option>All Status</option>
+                            <option>Unresolved</option>
+                            <option>Resolved</option>
+                        </select>
+                    </div>
+
+                    <table id="unansweredQueriesTable">
+                        <thead>
+                            <tr>
+                                <th>Query</th>
+                                <th>Confidence</th>
+                                <th>Tenant</th>
+                                <th>Status</th>
+                                <th>For Training</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="cursor: pointer;" onclick="showQueryDetail('q1', 'How do I integrate with Salesforce?', 'You can integrate with Salesforce using our REST API...', 0.3, 'scube', false, false)">
+                                <td><strong>How do I integrate with Salesforce?</strong></td>
+                                <td><span class="badge badge-danger">0.3</span></td>
+                                <td>Scube Infotech</td>
+                                <td><span class="badge badge-warning">Unresolved</span></td>
+                                <td><input type="checkbox" onclick="event.stopPropagation()"></td>
+                                <td><button class="btn btn-primary" style="padding: 4px 8px; font-size: 11px;" onclick="event.stopPropagation(); showQueryDetail('q1', 'How do I integrate with Salesforce?', 'You can integrate with Salesforce using our REST API...', 0.3, 'scube', false, false)">View</button></td>
+                            </tr>
+                            <tr style="cursor: pointer;" onclick="showQueryDetail('q2', 'What are the annual licensing costs?', 'Annual licensing starts at $5000 per year...', 0.4, 'scube', false, true)">
+                                <td><strong>What are the annual licensing costs?</strong></td>
+                                <td><span class="badge badge-warning">0.4</span></td>
+                                <td>Scube Infotech</td>
+                                <td><span class="badge badge-warning">Unresolved</span></td>
+                                <td><input type="checkbox" checked onclick="event.stopPropagation()"></td>
+                                <td><button class="btn btn-primary" style="padding: 4px 8px; font-size: 11px;" onclick="event.stopPropagation(); showQueryDetail('q2', 'What are the annual licensing costs?', 'Annual licensing starts at $5000 per year...', 0.4, 'scube', false, true)">View</button></td>
+                            </tr>
+                            <tr style="cursor: pointer;" onclick="showQueryDetail('q3', 'Can I export reports in PDF format?', 'Yes, you can export reports in PDF, Excel and CSV formats...', 0.7, 'scube', true, false)">
+                                <td><strong>Can I export reports in PDF format?</strong></td>
+                                <td><span class="badge badge-success">0.7</span></td>
+                                <td>Scube Infotech</td>
+                                <td><span class="badge badge-success">Resolved</span></td>
+                                <td><input type="checkbox" onclick="event.stopPropagation()"></td>
+                                <td><button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="event.stopPropagation(); showQueryDetail('q3', 'Can I export reports in PDF format?', 'Yes, you can export reports in PDF, Excel and CSV formats...', 0.7, 'scube', true, false)">View</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tenants Tab -->
+            <div id="tenants" class="tab-content">
+                <div class="header">
+                    <h1>🏢 Manage Tenants</h1>
+                </div>
+
+                <div class="section">
+                    <div style="margin-bottom: 20px;">
+                        <button class="btn btn-primary" onclick="showAddTenant()">+ Add New Tenant</button>
+                    </div>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Domain</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Scube Infotech Pte Ltd</strong></td>
+                                <td>scube.com</td>
+                                <td><span class="badge badge-success">Active</span></td>
+                                <td>2024-02-15</td>
+                                <td>
+                                    <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px; margin-right: 4px;" onclick="showEditTenant('Scube Infotech Pte Ltd', 'scube.com', 'https://scube.com', 'scube-tenant-id')">Edit</button>
+                                    <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px; margin-right: 4px;" onclick="showEditTenant('Scube Infotech Pte Ltd', 'scube.com', 'https://scube.com', 'scube-tenant-id')">Edit</button>
+                                    <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px; margin-right: 4px;">Select</button>
+                                    <button class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;" onclick="deactivateTenant('scube-tenant-id')">Deactivate</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Rapas Engineering Services</strong></td>
+                                <td>rapas.com.sg</td>
+                                <td><span class="badge badge-success">Active</span></td>
+                                <td>2024-02-10</td>
+                                <td>
+                                    <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px; margin-right: 4px;" onclick="showEditTenant('Rapas Engineering Services', 'rapas.com.sg', 'https://rapas.com.sg', 'rapas-tenant-id')">Edit</button>
+                                    <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px; margin-right: 4px;" onclick="showEditTenant('Rapas Engineering Services', 'rapas.com.sg', 'https://rapas.com.sg', 'rapas-tenant-id')">Edit</button>
+                                    <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px; margin-right: 4px;">Select</button>
+                                    <button class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;" onclick="deactivateTenant('rapas-tenant-id')">Deactivate</button>
+                                </td>
+                                // Edit Tenant Modal (moved from HTML)
+                                function showEditTenant(name, domain, websiteUrl, tenantId) {
+                                    let modal = document.createElement('div');
+                                    modal.className = 'modal active';
+                                    modal.id = 'editTenantModal';
+                                    modal.innerHTML = `
+                                        <div class="modal-content" style="max-width: 480px;">
+                                            <span class="close-btn" onclick="closeEditTenant()">✕</span>
+                                            <div class="modal-header">Edit Tenant</div>
+                                            <div style="margin-bottom: 16px; color: #6b7280; font-size: 13px;">Update tenant details. Website URL is used for crawling and widget integration.</div>
+                                            <div style="margin-bottom: 12px;">
+                                                <label style="font-size: 13px; color: #6b7280;">Tenant Name:</label>
+                                                <input id="editTenantNameInput" type="text" value="${name}" style="width: 100%; padding: 8px; margin-bottom: 8px; border-radius: 6px; border: 1px solid #d1d5db;">
+                                                <label style="font-size: 13px; color: #6b7280;">Domain:</label>
+                                                <input id="editTenantDomainInput" type="text" value="${domain}" style="width: 100%; padding: 8px; margin-bottom: 8px; border-radius: 6px; border: 1px solid #d1d5db;">
+                                                <label style="font-size: 13px; color: #6b7280;">Website URL:</label>
+                                                <input id="editTenantWebsiteUrlInput" type="text" value="${websiteUrl}" style="width: 100%; padding: 8px; margin-bottom: 8px; border-radius: 6px; border: 1px solid #d1d5db;">
+                                            </div>
+                                            <button class="btn btn-primary" onclick="saveEditTenant('${tenantId}')">Save Changes</button>
+                                        </div>
+                                    `;
+                                    document.body.appendChild(modal);
+                                }
+                                function closeEditTenant() {
+                                    let modal = document.getElementById('editTenantModal');
+                                    if (modal) document.body.removeChild(modal);
+                                }
+                                function saveEditTenant(tenantId) {
+                                    let name = document.getElementById('editTenantNameInput').value;
+                                    let domain = document.getElementById('editTenantDomainInput').value;
+                                    let websiteUrl = document.getElementById('editTenantWebsiteUrlInput').value;
+                                    if (!name || !domain || !websiteUrl) {
+                                        alert('Please fill all fields.');
+                                        return;
+                                    }
+                                    // Call backend PATCH endpoint to update tenant
+                                    fetch(`/api/tenants/${tenantId}`, {
+                                        method: 'PATCH',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ name, domain, website_url: websiteUrl })
+                                    })
+                                    .then(res => {
+                                        if (!res.ok) throw new Error('Failed to update tenant');
+                                        return res.json();
+                                    })
+                                    .then(data => {
+                                        alert('Tenant updated!');
+                                        closeEditTenant();
+                                        // Optionally, refresh tenant list here
+                                    })
+                                    .catch(err => {
+                                        alert('Error updating tenant: ' + err.message);
+                                    });
+                                }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Analytics Tab -->
+            <div id="analytics" class="tab-content">
+                <div class="header">
+                    <h1>📈 Detailed Analytics</h1>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Performance Metrics</div>
+                    <p style="color: #6b7280; margin-bottom: 16px;">30-day rolling average</p>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Metric</th>
+                                <th>Scube</th>
+                                <th>Rapas</th>
+                                <th>Average</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Response Time (ms)</td>
+                                <td>245ms</td>
+                                <td>198ms</td>
+                                <td>222ms</td>
+                            </tr>
+                            <tr>
+                                <td>Uptime</td>
+                                <td>99.9%</td>
+                                <td>99.95%</td>
+                                <td>99.92%</td>
+                            </tr>
+                            <tr>
+                                <td>Message Quality Score</td>
+                                <td>8.5/10</td>
+                                <td>7.8/10</td>
+                                <td>8.15/10</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div id="settings" class="tab-content">
+                <div class="header">
+                    <h1>⚙️ System Settings</h1>
+                </div>
+                <div class="section">
+                    <p>System configuration coming soon...</p>
+                </div>
+            </div>
+
+            <!-- Agreements Tab -->
+            <div id="agreements" class="tab-content">
+                <div class="header">
+                    <h1>📋 Agreements</h1>
+                </div>
+                <div class="section">
+                    <p>Agreement management coming soon...</p>
+                </div>
+            </div>
+
+            <!-- Maintenance Tab -->
+            <div id="maintenance" class="tab-content">
+                <div class="header">
+                    <h1>🔧 Maintenance</h1>
+                </div>
+                <div class="section">
+                    <p>Maintenance tools coming soon...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variable to store current query ID
+        let currentQueryId = null;
+
+        function switchTab(tabName) {
+                            // Edit Tenant Modal
+                            function showEditTenant(name, domain, websiteUrl, tenantId) {
+                                let modal = document.createElement('div');
+                                modal.className = 'modal active';
+                                modal.id = 'editTenantModal';
+                                modal.innerHTML = `
+                                    <div class="modal-content" style="max-width: 480px;">
+                                        <span class="close-btn" onclick="closeEditTenant()">✕</span>
+                                        <div class="modal-header">Edit Tenant</div>
+                                        <div style="margin-bottom: 16px; color: #6b7280; font-size: 13px;">Update tenant details. Website URL is used for crawling and widget integration.</div>
+                                        <div style="margin-bottom: 12px;">
+                                            <label style="font-size: 13px; color: #6b7280;">Tenant Name:</label>
+                                            <input id="editTenantNameInput" type="text" value="${name}" style="width: 100%; padding: 8px; margin-bottom: 8px; border-radius: 6px; border: 1px solid #d1d5db;">
+                                            <label style="font-size: 13px; color: #6b7280;">Domain:</label>
+                                            <input id="editTenantDomainInput" type="text" value="${domain}" style="width: 100%; padding: 8px; margin-bottom: 8px; border-radius: 6px; border: 1px solid #d1d5db;">
+                                            <label style="font-size: 13px; color: #6b7280;">Website URL:</label>
+                                            <input id="editTenantWebsiteUrlInput" type="text" value="${websiteUrl}" style="width: 100%; padding: 8px; margin-bottom: 8px; border-radius: 6px; border: 1px solid #d1d5db;">
+                                        </div>
+                                        <button class="btn btn-primary" onclick="saveEditTenant('${tenantId}')">Save Changes</button>
+                                    </div>
+                                `;
+                                document.body.appendChild(modal);
+                            }
+                            function closeEditTenant() {
+                                let modal = document.getElementById('editTenantModal');
+                                if (modal) document.body.removeChild(modal);
+                            }
+                            function saveEditTenant(tenantId) {
+                                let name = document.getElementById('editTenantNameInput').value;
+                                let domain = document.getElementById('editTenantDomainInput').value;
+                                let websiteUrl = document.getElementById('editTenantWebsiteUrlInput').value;
+                                if (!name || !domain || !websiteUrl) {
+                                    alert('Please fill all fields.');
+                                    return;
+                                }
+                                // Call backend PATCH endpoint to update tenant
+                                fetch(`/api/tenants/${tenantId}`, {
+                                    method: 'PATCH',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ name, domain, website_url: websiteUrl })
+                                })
+                                .then(res => {
+                                    if (!res.ok) throw new Error('Failed to update tenant');
+                                    return res.json();
+                                })
+                                .then(data => {
+                                    alert('Tenant updated!');
+                                    closeEditTenant();
+                                    // Optionally, refresh tenant list here
+                                })
+                                .catch(err => {
+                                    alert('Error updating tenant: ' + err.message);
+                                });
+                        }
+
+        // Set status badge
+        const statusBadge = document.getElementById('queryStatus');
+        if (isResolved) {
+            statusBadge.textContent = 'Resolved';
+            statusBadge.className = 'badge badge-success';
+            document.getElementById('resolveBtn').disabled = true;
+            document.getElementById('resolveBtn').textContent = 'Already Resolved';
+        } else {
+            statusBadge.textContent = 'Unresolved';
+            statusBadge.className = 'badge badge-warning';
+            document.getElementById('resolveBtn').disabled = false;
+            document.getElementById('resolveBtn').textContent = 'Mark Resolved';
+        }
+
+        // Set training status
+        const trainingStatus = document.getElementById('trainingStatus');
+        const markTrainingBtn = document.getElementById('markTrainingBtn');
+        if (isMarkedForTraining) {
+            trainingStatus.textContent = '✓ Marked for Training';
+            markTrainingBtn.disabled = true;
+            markTrainingBtn.textContent = 'Already Marked';
+            markTrainingBtn.style.background = '#9ca3af';
+        } else {
+            trainingStatus.textContent = '';
+            markTrainingBtn.disabled = false;
+            markTrainingBtn.textContent = 'Mark for Training';
+            markTrainingBtn.style.background = '#3b82f6';
+        }
+
+        // Show modal
+        document.getElementById('queryDetailModal').classList.add('active');
+
+        function closeQueryDetail() {
+            document.getElementById('queryDetailModal').classList.remove('active');
+            currentQueryId = null;
+        }
+
+        function markForTraining() {
+            if (!currentQueryId) return;
+            
+            // In production, this would call: PATCH /api/admin/unanswered-queries/{query_id}/mark-for-training
+            fetch(`http://localhost:8001/api/admin/unanswered-queries/${currentQueryId}/mark-for-training`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('✓ Query marked for LLM training! This Q&A pair will be included in the next fine-tuning batch.');
+                
+                // Update button state
+                document.getElementById('trainingStatus').textContent = '✓ Marked for Training';
+                document.getElementById('markTrainingBtn').disabled = true;
+                document.getElementById('markTrainingBtn').textContent = 'Already Marked';
+                document.getElementById('markTrainingBtn').style.background = '#9ca3af';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('✓ Query marked for training! (Simulated - API will be called in production)');
+                
+                // Update button state even on error for demo
+                document.getElementById('trainingStatus').textContent = '✓ Marked for Training';
+                document.getElementById('markTrainingBtn').disabled = true;
+                document.getElementById('markTrainingBtn').textContent = 'Already Marked';
+                document.getElementById('markTrainingBtn').style.background = '#9ca3af';
+            });
+        }
+
+        function resolveQuery() {
+            if (!currentQueryId) return;
+            
+            const notes = prompt('Optional: Add resolution notes (or leave empty):');
+            
+            // In production, this would call: PATCH /api/admin/unanswered-queries/{query_id}/resolve
+            fetch(`http://localhost:8001/api/admin/unanswered-queries/${currentQueryId}/resolve`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ resolution_notes: notes })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('✓ Query marked as resolved!');
+                
+                // Update status badge
+                document.getElementById('queryStatus').textContent = 'Resolved';
+                document.getElementById('queryStatus').className = 'badge badge-success';
+                document.getElementById('resolveBtn').disabled = true;
+                document.getElementById('resolveBtn').textContent = 'Already Resolved';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('✓ Query marked as resolved! (Simulated - API will be called in production)');
+                
+                // Update status badge even on error for demo
+                document.getElementById('queryStatus').textContent = 'Resolved';
+                document.getElementById('queryStatus').className = 'badge badge-success';
+                document.getElementById('resolveBtn').disabled = true;
+                document.getElementById('resolveBtn').textContent = 'Already Resolved';
+            });
+        }
+
+        function goToDocuments() {
+            closeQueryDetail();
+            switchTab('documents');
+            // Highlight the upload section
+            const uploadSection = document.querySelector('#documents .section');
+            if (uploadSection) {
+                uploadSection.style.border = '3px solid #059669';
+                uploadSection.style.boxShadow = '0 0 20px rgba(5, 150, 105, 0.3)';
+                setTimeout(() => {
+                    uploadSection.style.border = '';
+                    uploadSection.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+                }, 3000);
+            }
+            alert('💡 Upload FAQ documents, knowledge base articles, or training data here to improve LLM responses.');
+        }
+
+        function processDoc() {
+            alert('Document processing started. This will be indexed for RAG retrieval.');
+        }
+
+                            // Add/Edit Tenant Modal
+                            function showAddTenant() {
+                                // Show modal for adding a new tenant
+                                let modal = document.createElement('div');
+                                modal.className = 'modal active';
+                                modal.id = 'addTenantModal';
+                                modal.innerHTML = `
+                                    <div class="modal-content" style="max-width: 480px;">
+                                        <span class="close-btn" onclick="closeAddTenant()">✕</span>
+                                        <div class="modal-header">Add New Tenant</div>
+                                        <div style="margin-bottom: 16px; color: #6b7280; font-size: 13px;">Fill in tenant details. Website URL is used for crawling and widget integration.</div>
+                                        <div style="margin-bottom: 12px;">
+                                            <label style="font-size: 13px; color: #6b7280;">Tenant Name:</label>
+                                            <input id="tenantNameInput" type="text" style="width: 100%; padding: 8px; margin-bottom: 8px; border-radius: 6px; border: 1px solid #d1d5db;">
+                                            <label style="font-size: 13px; color: #6b7280;">Domain:</label>
+                                            <input id="tenantDomainInput" type="text" placeholder="e.g. rapas.com.sg" style="width: 100%; padding: 8px; margin-bottom: 8px; border-radius: 6px; border: 1px solid #d1d5db;">
+                                            <label style="font-size: 13px; color: #6b7280;">Website URL:</label>
+                                            <input id="tenantWebsiteUrlInput" type="text" placeholder="https://rapas.com.sg" style="width: 100%; padding: 8px; margin-bottom: 8px; border-radius: 6px; border: 1px solid #d1d5db;">
+                                        </div>
+                                        <button class="btn btn-primary" onclick="saveTenant()">Save Tenant</button>
+                                    </div>
+                                `;
+                                document.body.appendChild(modal);
+                            }
+                            function closeAddTenant() {
+                                let modal = document.getElementById('addTenantModal');
+                                if (modal) document.body.removeChild(modal);
+                            }
+                            function saveTenant() {
+                                // In production, send data to backend
+                                let name = document.getElementById('tenantNameInput').value;
+                                let domain = document.getElementById('tenantDomainInput').value;
+                                let websiteUrl = document.getElementById('tenantWebsiteUrlInput').value;
+                                if (!name || !domain || !websiteUrl) {
+                                    alert('Please fill all fields.');
+                                    return;
+                                }
+                                alert('Tenant saved! (Demo only)\nName: ' + name + '\nDomain: ' + domain + '\nWebsite URL: ' + websiteUrl);
+                                closeAddTenant();
+                                // Optionally, refresh tenant list
+                            }
+
+        // Close modals on background click
+        document.getElementById('conversationModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeConversation();
+            }
+        });
+
+        document.getElementById('queryDetailModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeQueryDetail();
+            }
+        });
+
+        // Initialize charts (would use Chart.js in production)
+        console.log('Admin Dashboard initialized');
+    }
+    </script>
+</body>
+</html>

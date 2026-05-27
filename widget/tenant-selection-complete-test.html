@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tenant Selection Enhancement - Complete Test</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #f3f4f6;
+            color: #1f2937;
+            line-height: 1.6;
+        }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        h1 { color: #1e40af; margin-bottom: 8px; font-size: 28px; }
+        .subtitle { color: #6b7280; margin-bottom: 32px; font-size: 16px; }
+        
+        /* Card styles */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            border: 1px solid #e5e7eb;
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #f3f4f6;
+        }
+        .card-icon { font-size: 24px; }
+        .card-title { font-size: 18px; font-weight: 600; color: #1f2937; }
+        
+        /* Table styles */
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th {
+            text-align: left;
+            padding: 12px 16px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #6b7280;
+            background: #f9fafb;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 14px;
+        }
+        tr:hover { background: #f9fafb; }
+        tr.selected-row {
+            background: #eff6ff !important;
+            border-left: 3px solid #3b82f6;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .status-active { background: #dcfce7; color: #166534; }
+        .status-inactive { background: #f3f4f6; color: #6b7280; }
+        
+        /* Form styles */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #374151;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        input, select {
+            padding: 10px 14px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s;
+            background: #fafafa;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        input[readonly] {
+            background: #f3f4f6;
+            cursor: not-allowed;
+        }
+        
+        /* Button styles */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+        .btn-sm { padding: 6px 12px; font-size: 12px; }
+        
+        /* Selected tenant indicator */
+        .selected-indicator {
+            display: none;
+            background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%);
+            border: 2px solid #3b82f6;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+            animation: slideIn 0.3s ease-out;
+        }
+        .selected-indicator.show {
+            display: block;
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .indicator-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .indicator-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .tenant-id {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1e40af;
+            font-family: 'Courier New', monospace;
+        }
+        .tenant-name {
+            font-size: 14px;
+            color: #6b7280;
+        }
+        .status-pill {
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-pill.active {
+            background: #10b981;
+            color: white;
+        }
+        .status-pill.inactive {
+            background: #9ca3af;
+            color: white;
+        }
+        .indicator-message {
+            font-size: 13px;
+            color: #4b5563;
+            line-height: 1.5;
+        }
+        .indicator-message strong {
+            color: #1e40af;
+        }
+        
+        /* Action buttons */
+        .action-bar {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        /* Stats grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+        }
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1e40af;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #6b7280;
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container { padding: 12px; }
+            .card { padding: 16px; }
+            .form-grid { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: 1fr; }
+            th, td { padding: 10px 12px; font-size: 13px; }
+        }
+        
+        /* Highlight animation */
+        .highlight-flash {
+            animation: flash 0.5s ease-out;
+        }
+        @keyframes flash {
+            0%, 100% { background: transparent; }
+            50% { background: #fef3c7; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏢 Tenant Selection Enhancement Test</h1>
+        <p class="subtitle">Test the enhanced tenant selection with auto-population of all 4 boxes and visual feedback</p>
+        
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="totalTenants">3</div>
+                <div class="stat-label">Total Tenants</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="selectedCount">0</div>
+                <div class="stat-label">Selected</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" style="color: #10b981;">4</div>
+                <div class="stat-label">Boxes Auto-Filled</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" style="color: #3b82f6;">100%</div>
+                <div class="stat-label">Coverage</div>
+            </div>
+        </div>
+        
+        <!-- Selected Tenant Indicator -->
+        <div class="selected-indicator" id="selectedTenantIndicator">
+            <div class="indicator-header">
+                <div class="indicator-title">
+                    <span class="tenant-id" id="indicatorTenantId">NUTECH</span>
+                    <span class="tenant-name" id="indicatorTenantName">(Nutech)</span>
+                </div>
+                <span class="status-pill active" id="indicatorStatus">Active</span>
+            </div>
+            <div class="indicator-message">
+                All 4 tenant selection boxes are now configured for <strong id="indicatorStrong">NUTECH</strong>. 
+                Changes made to the fields below will apply to this tenant.
+            </div>
+        </div>
+        
+        <!-- Tenant List Card -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-icon">📋</span>
+                <span class="card-title">Tenant List</span>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tenant Name</th>
+                            <th>Domain</th>
+                            <th>Industry</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tenantTableBody">
+                        <tr data-tenant-id="nutech">
+                            <td><strong>Nutech</strong><br><span style="color: #6b7280; font-size: 12px;">nutech</span></td>
+                            <td>nutech.com</td>
+                            <td>Financial Services</td>
+                            <td><span class="status-badge status-active">Active</span></td>
+                            <td>
+                                <button class="btn btn-primary btn-sm" onclick="selectTenant('nutech', 'Nutech', 'nutech.com', 'Active')">
+                                    Select
+                                </button>
+                            </td>
+                        </tr>
+                        <tr data-tenant-id="scube">
+                            <td><strong>Scube Infotech</strong><br><span style="color: #6b7280; font-size: 12px;">scube</span></td>
+                            <td>scube.com</td>
+                            <td>Technology</td>
+                            <td><span class="status-badge status-active">Active</span></td>
+                            <td>
+                                <button class="btn btn-primary btn-sm" onclick="selectTenant('scube', 'Scube Infotech', 'scube.com', 'Active')">
+                                    Select
+                                </button>
+                            </td>
+                        </tr>
+                        <tr data-tenant-id="rapas">
+                            <td><strong>Rapas Engineering</strong><br><span style="color: #6b7280; font-size: 12px;">rapas</span></td>
+                            <td>rapas.com.sg</td>
+                            <td>Engineering</td>
+                            <td><span class="status-badge status-active">Active</span></td>
+                            <td>
+                                <button class="btn btn-primary btn-sm" onclick="selectTenant('rapas', 'Rapas Engineering', 'rapas.com.sg', 'Active')">
+                                    Select
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="action-bar">
+                <button class="btn btn-secondary" onclick="clearAllSelections()">
+                    Clear All Selections
+                </button>
+                <button class="btn btn-secondary" onclick="testAllTenants()">
+                    Test All Tenants (Auto)
+                </button>
+            </div>
+        </div>
+        
+        <!-- All 4 Tenant Selection Boxes -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-icon">📦</span>
+                <span class="card-title">All 4 Tenant Selection Boxes (Auto-Populated)</span>
+            </div>
+            <p style="color: #6b7280; font-size: 14px; margin-bottom: 20px;">
+                When a tenant is selected above, all 4 boxes below are automatically populated.
+            </p>
+            <div class="form-grid">
+                <!-- Box 1: Tenant Login User -->
+                <div class="form-group">
+                    <label for="tenantUserTenantId">👤 Tenant Login User - Tenant ID</label>
+                    <input type="text" id="tenantUserTenantId" placeholder="Will be auto-populated" readonly>
+                </div>
+                
+                <!-- Box 2: Daily Report Settings -->
+                <div class="form-group">
+                    <label for="dailyReportTenantId">📧 Daily Report Settings - Select Tenant</label>
+                    <select id="dailyReportTenantId">
+                        <option value="">-- Select a Tenant --</option>
+                    </select>
+                </div>
+                
+                <!-- Box 3: Website Widget Code -->
+                <div class="form-group">
+                    <label for="widgetTenantId">🧩 Website Widget Code - Tenant ID</label>
+                    <input type="text" id="widgetTenantId" placeholder="Will be auto-populated" readonly>
+                </div>
+                
+                <!-- Box 4: Documents -->
+                <div class="form-group">
+                    <label for="docTenantId">📄 Documents - Select Tenant</label>
+                    <select id="docTenantId">
+                        <option value="">-- Select a Tenant --</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Additional Fields -->
+            <div class="form-grid" style="margin-top: 20px;">
+                <div class="form-group">
+                    <label for="widgetApiUrl">🔧 Widget API URL</label>
+                    <input type="text" id="widgetApiUrl" placeholder="Will be auto-filled if empty">
+                </div>
+                <div class="form-group">
+                    <label for="dailyReportEmail">📋 Daily Report Email</label>
+                    <input type="email" id="dailyReportEmail" placeholder="Email for daily reports">
+                </div>
+            </div>
+        </div>
+        
+        <!-- Test Results -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-icon">✅</span>
+                <span class="card-title">Test Results</span>
+            </div>
+            <div id="testResults" style="font-family: monospace; font-size: 13px; color: #4b5563; background: #f9fafb; padding: 16px; border-radius: 8px; border: 1px solid #e5e7eb;">
+                No tests run yet. Select a tenant to begin testing.
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // State
+        let selectedTenant = null;
+        let testCount = 0;
+        
+        // Tenant data
+        const tenants = {
+            nutech: { name: 'Nutech', domain: 'nutech.com', status: 'Active' },
+            scube: { name: 'Scube Infotech', domain: 'scube.com', status: 'Active' },
+            rapas: { name: 'Rapas Engineering', domain: 'rapas.com.sg', status: 'Active' }
+        };
+        
+        // Select tenant
+        function selectTenant(tenantId, tenantName, domain, status) {
+            selectedTenant = { tenantId, tenantName, domain, status };
+            testCount++;
+            
+            // 1. Populate all 4 tenant selection boxes
+            document.getElementById('tenantUserTenantId').value = tenantId;
+            document.getElementById('widgetTenantId').value = tenantId;
+            
+            // Populate dropdowns
+            populateDropdown('dailyReportTenantId', tenantId);
+            populateDropdown('docTenantId', tenantId);
+            
+            // 2. Auto-fill API URL if empty
+            const apiUrlInput = document.getElementById('widgetApiUrl');
+            if (apiUrlInput && !apiUrlInput.value) {
+                apiUrlInput.value = window.location.origin;
+            }
+            
+            // 3. Highlight selected row
+            highlightSelectedRow(tenantId);
+            
+            // 4. Show selected tenant indicator
+            showSelectedTenantIndicator(tenantId, tenantName, status);
+            
+            // Update stats
+            document.getElementById('selectedCount').textContent = testCount;
+            
+            // Log test result
+            logTestResult(`✅ Tenant "${tenantId.toUpperCase()}" selected - All 4 boxes populated`);
+        }
+        
+        function populateDropdown(selectId, tenantId) {
+            const select = document.getElementById(selectId);
+            if (select) {
+                let optionExists = false;
+                for (let i = 0; i < select.options.length; i++) {
+                    if (select.options[i].value === tenantId) {
+                        optionExists = true;
+                        break;
+                    }
+                }
+                if (!optionExists) {
+                    const option = document.createElement('option');
+                    option.value = tenantId;
+                    option.textContent = tenantId;
+                    select.appendChild(option);
+                }
+                select.value = tenantId;
+            }
+        }
+        
+        function highlightSelectedRow(tenantId) {
+            document.querySelectorAll('#tenantTableBody tr').forEach(row => {
+                row.classList.remove('selected-row', 'highlight-flash');
+            });
+            const selectedRow = document.querySelector(`#tenantTableBody tr[data-tenant-id="${tenantId}"]`);
+            if (selectedRow) {
+                selectedRow.classList.add('selected-row', 'highlight-flash');
+            }
+        }
+        
+        function showSelectedTenantIndicator(tenantId, tenantName, status) {
+            const indicator = document.getElementById('selectedTenantIndicator');
+            const tenantIdEl = document.getElementById('indicatorTenantId');
+            const tenantNameEl = document.getElementById('indicatorTenantName');
+            const statusEl = document.getElementById('indicatorStatus');
+            const strongEl = document.getElementById('indicatorStrong');
+            
+            if (indicator && tenantIdEl && tenantNameEl && statusEl && strongEl) {
+                tenantIdEl.textContent = tenantId.toUpperCase();
+                tenantNameEl.textContent = `(${tenantName})`;
+                statusEl.textContent = status;
+                statusEl.className = `status-pill ${status === 'Active' ? 'active' : 'inactive'}`;
+                strongEl.textContent = tenantId.toUpperCase();
+                
+                indicator.classList.add('show');
+            }
+        }
+        
+        function clearAllSelections() {
+            // Clear all fields
+            document.getElementById('tenantUserTenantId').value = '';
+            document.getElementById('widgetTenantId').value = '';
+            document.getElementById('dailyReportTenantId').value = '';
+            document.getElementById('docTenantId').value = '';
+            document.getElementById('widgetApiUrl').value = '';
+            document.getElementById('dailyReportEmail').value = '';
+            
+            // Remove highlights
+            document.querySelectorAll('#tenantTableBody tr').forEach(row => {
+                row.classList.remove('selected-row', 'highlight-flash');
+            });
+            
+            // Hide indicator
+            const indicator = document.getElementById('selectedTenantIndicator');
+            if (indicator) indicator.classList.remove('show');
+            
+            selectedTenant = null;
+            
+            logTestResult('🧹 All selections cleared');
+        }
+        
+        function testAllTenants() {
+            const tenantIds = ['nutech', 'scube', 'rapas'];
+            let delay = 0;
+            
+            tenantIds.forEach((tenantId, index) => {
+                setTimeout(() => {
+                    const tenant = tenants[tenantId];
+                    selectTenant(tenantId, tenant.name, tenant.domain, tenant.status);
+                    
+                    if (index === tenantIds.length - 1) {
+                        setTimeout(() => {
+                            logTestResult('✅ All tenants tested successfully!');
+                        }, 500);
+                    }
+                }, delay);
+                delay += 800;
+            });
+        }
+        
+        function logTestResult(message) {
+            const results = document.getElementById('testResults');
+            const timestamp = new Date().toLocaleTimeString();
+            const newMessage = `<span style="color: #3b82f6;">[${timestamp}]</span> ${message}<br>`;
+            
+            if (results.innerHTML.includes('No tests run yet')) {
+                results.innerHTML = newMessage;
+            } else {
+                results.innerHTML = newMessage + results.innerHTML;
+            }
+        }
+        
+        // Initialize
+        console.log('Tenant Selection Enhancement Test Loaded');
+        logTestResult('🧪 Test environment ready. Select a tenant to begin.');
+    </script>
+</body>
+</html>

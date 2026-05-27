@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WhatsApp Leads & Reservations</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { visibility: hidden; font-family: 'Inter', sans-serif; }
+    body.loaded { visibility: visible; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    .status-tentative  { background:#fef9c3; color:#92400e; border:1px solid #fde68a; }
+    .status-confirmed  { background:#d1fae5; color:#065f46; border:1px solid #6ee7b7; }
+    .status-cancelled  { background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; }
+    .card { background:#fff; border-radius:1rem; box-shadow:0 1px 3px rgba(0,0,0,.1); }
+    .stat-num { font-size:2rem; font-weight:700; line-height:1; }
+    tr:hover td { background:#f9fafb; }
+    .badge { display:inline-block; padding:2px 10px; border-radius:9999px; font-size:.75rem; font-weight:600; }
+    .btn-confirm { background:#059669; color:#fff; padding:4px 10px; border-radius:6px; font-size:.75rem; font-weight:600; cursor:pointer; border:none; }
+    .btn-confirm:hover { background:#047857; }
+    .btn-cancel  { background:#dc2626; color:#fff; padding:4px 10px; border-radius:6px; font-size:.75rem; font-weight:600; cursor:pointer; border:none; }
+    .btn-cancel:hover  { background:#b91c1c; }
+    .btn-reconfirm { background:#2563eb; color:#fff; padding:4px 10px; border-radius:6px; font-size:.75rem; font-weight:600; cursor:pointer; border:none; }
+    .btn-reconfirm:hover { background:#1d4ed8; }
+    .wa-header { background:linear-gradient(135deg,#25d366 0%,#128c7e 100%); }
+    .spinner { display:inline-block; width:1rem; height:1rem; border:2px solid #d1d5db; border-top-color:#059669; border-radius:50%; animation:spin .6s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .toast { position:fixed; bottom:1.5rem; right:1.5rem; z-index:9999; padding:.75rem 1.25rem; border-radius:.75rem; font-weight:600; font-size:.9rem; box-shadow:0 4px 16px rgba(0,0,0,.15); animation:slideUp .3s ease; }
+    .toast-success { background:#059669; color:#fff; }
+    .toast-error   { background:#dc2626; color:#fff; }
+    @keyframes slideUp { from{opacity:0;transform:translateY(1rem)} to{opacity:1;transform:translateY(0)} }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen" onload="document.body.classList.add('loaded')">
+
+  <!-- Header -->
+  <div class="wa-header shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(255,255,255,.2)">
+          <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold text-white">WhatsApp Leads & Reservations</h1>
+          <p id="tenantLabel" class="text-xs text-white" style="opacity:.8"></p>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        <a href="/public/dashboard" class="px-3 py-2 rounded-lg text-sm font-medium text-white" style="background:rgba(255,255,255,.2)">← Dashboard</a>
+        <button id="refreshBtn" class="px-3 py-2 rounded-lg bg-white text-sm font-semibold" style="color:#128c7e;">Refresh</button>
+        <button id="logoutBtn" class="px-3 py-2 rounded-lg border text-sm font-semibold" style="border-color:#fff;color:#fff;">Logout</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto p-4">
+    <div id="errorBox" class="hidden mb-4 p-3 rounded-lg border border-red-300 bg-red-50 text-red-700 text-sm"></div>
+
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="card p-5">
+        <div class="text-xs text-gray-400 uppercase tracking-wide mb-1">Total Leads</div>
+        <div id="kpiTotal" class="stat-num text-gray-800">—</div>
+      </div>
+      <div class="card p-5">
+        <div class="text-xs text-gray-400 uppercase tracking-wide mb-1">Tentative</div>
+        <div id="kpiTentative" class="stat-num" style="color:#92400e;">—</div>
+      </div>
+      <div class="card p-5">
+        <div class="text-xs text-gray-400 uppercase tracking-wide mb-1">Confirmed</div>
+        <div id="kpiConfirmed" class="stat-num" style="color:#065f46;">—</div>
+      </div>
+      <div class="card p-5">
+        <div class="text-xs text-gray-400 uppercase tracking-wide mb-1">Cancelled</div>
+        <div id="kpiCancelled" class="stat-num" style="color:#991b1b;">—</div>
+      </div>
+    </div>
+
+    <!-- Filters + Table -->
+    <div class="card p-5">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <h2 class="text-base font-semibold text-gray-800">Booking / Callback / Demo Requests</h2>
+        <div class="flex flex-wrap gap-2">
+          <select id="intentFilter" class="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-green-400 outline-none">
+            <option value="">All Intents</option>
+            <option value="booking">Booking</option>
+            <option value="callback">Callback</option>
+            <option value="demo_scheduling">Demo Scheduling</option>
+          </select>
+          <select id="statusFilter" class="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-green-400 outline-none">
+            <option value="all">All Status</option>
+            <option value="tentative">Tentative</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+          <button onclick="exportCSV()" class="px-3 py-2 rounded-lg text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50">⬇ Export CSV</button>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b-2 border-gray-100 text-xs text-gray-400 uppercase tracking-wide">
+              <th class="text-left py-3 px-3">Created</th>
+              <th class="text-left py-3 px-3">Contact</th>
+              <th class="text-center py-3 px-3">Intent</th>
+              <th class="text-center py-3 px-3">Date</th>
+              <th class="text-center py-3 px-3">Time</th>
+              <th class="text-center py-3 px-3">Persons</th>
+              <th class="text-center py-3 px-3">Type</th>
+              <th class="text-center py-3 px-3">Calendar</th>
+              <th class="text-center py-3 px-3">Status</th>
+              <th class="text-center py-3 px-3">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="leadsTable">
+            <tr><td colspan="10" class="text-center py-12 text-gray-400">
+              <div class="spinner mx-auto mb-2"></div>Loading leads...
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div id="emptyState" class="hidden text-center py-16">
+        <div class="text-5xl mb-3">📋</div>
+        <div class="text-gray-400 text-sm">No leads found for this filter.</div>
+        <div class="text-gray-300 text-xs mt-1">Leads appear when customers send booking/callback messages via WhatsApp.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div id="toastEl" class="hidden"></div>
+
+  <script>
+    const API_BASE = window.location.origin;
+    let allLeads = [];
+
+    function logout() {
+      ['tenantToken','tenantName','tenantUsername','tenantId'].forEach(k => localStorage.removeItem(k));
+      window.location.href = '/public/login';
+    }
+
+    function toast(msg, type = 'success') {
+      const el = document.getElementById('toastEl');
+      el.className = `toast toast-${type}`;
+      el.textContent = msg;
+      el.classList.remove('hidden');
+      setTimeout(() => el.classList.add('hidden'), 3500);
+    }
+
+    function fmtDate(s) {
+      if (!s) return '—';
+      const d = new Date(s);
+      return d.toLocaleDateString('en-SG', {day:'2-digit',month:'short',year:'numeric'})
+           + ' ' + d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    }
+
+    function intentBadge(v) {
+      const colors = {booking:'bg-blue-100 text-blue-800', callback:'bg-purple-100 text-purple-800', demo_scheduling:'bg-orange-100 text-orange-800'};
+      const c = colors[v] || 'bg-gray-100 text-gray-700';
+      return `<span class="badge ${c}">${v || '—'}</span>`;
+    }
+
+    function calBadge(lead) {
+      if (lead.google_calendar_event_id)
+        return `<span class="badge" style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd" title="Synced to Google Calendar">📅 Synced</span>`;
+      return `<span class="text-gray-300 text-xs">—</span>`;
+    }
+
+    function actionBtns(lead) {
+      if (lead.status === 'tentative')
+      return `<button class="btn-confirm mr-1" onclick="updateStatus('${lead.id}','confirmed')">✓ Confirm</button>
+        <button class="btn-reconfirm mr-1" onclick="editLead('${lead.id}')">✎ Edit</button>
+                <button class="btn-cancel"  onclick="updateStatus('${lead.id}','cancelled')">✕ Cancel</button>`;
+      if (lead.status === 'confirmed')
+      return `<button class="btn-reconfirm mr-1" onclick="editLead('${lead.id}')">✎ Edit</button>
+        <button class="btn-cancel"  onclick="updateStatus('${lead.id}','cancelled')">✕ Cancel</button>`;
+          return `<button class="btn-reconfirm mr-1" onclick="editLead('${lead.id}')">✎ Edit</button>
+            <button class="btn-reconfirm" onclick="updateStatus('${lead.id}','confirmed')">↩ Re-confirm</button>`;
+    }
+
+    function renderTable(leads) {
+      const tbody = document.getElementById('leadsTable');
+      const empty = document.getElementById('emptyState');
+      if (!leads.length) {
+        tbody.innerHTML = '';
+        empty.classList.remove('hidden');
+        return;
+      }
+      empty.classList.add('hidden');
+      tbody.innerHTML = leads.map(l => `
+        <tr class="border-b border-gray-50 hover:bg-gray-50 transition-colors" id="row-${l.id}">
+          <td class="py-3 px-3 text-gray-500 text-xs whitespace-nowrap">${fmtDate(l.created_at)}</td>
+          <td class="py-3 px-3 font-mono text-xs text-gray-700">${l.phone_number || '—'}</td>
+          <td class="py-3 px-3 text-center">${intentBadge(l.intent_type)}</td>
+          <td class="py-3 px-3 text-center text-gray-700">${l.requested_date || '—'}</td>
+          <td class="py-3 px-3 text-center text-gray-700">${l.requested_time || '—'}</td>
+          <td class="py-3 px-3 text-center text-gray-700">${l.requested_persons ?? '—'}</td>
+          <td class="py-3 px-3 text-center text-gray-700">${l.requested_type || '—'}</td>
+          <td class="py-3 px-3 text-center" id="cal-${l.id}">${calBadge(l)}</td>
+          <td class="py-3 px-3 text-center" id="status-${l.id}">
+            <span class="badge status-${l.status}">${l.status || 'tentative'}</span>
+          </td>
+          <td class="py-3 px-3 text-center" id="actions-${l.id}">${actionBtns(l)}</td>
+        </tr>`).join('');
+    }
+
+    function updateKPIs(leads) {
+      const cnt = (s) => leads.filter(l => l.status === s).length;
+      document.getElementById('kpiTotal').textContent     = leads.length;
+      document.getElementById('kpiTentative').textContent = cnt('tentative');
+      document.getElementById('kpiConfirmed').textContent  = cnt('confirmed');
+      document.getElementById('kpiCancelled').textContent  = cnt('cancelled');
+    }
+
+    async function loadLeads() {
+      const token = localStorage.getItem('tenantToken');
+      const name  = localStorage.getItem('tenantName') || 'Tenant';
+      const user  = localStorage.getItem('tenantUsername') || '';
+      document.getElementById('tenantLabel').textContent = `${name} (${user})`;
+      if (!token) { logout(); return; }
+
+      const intent = document.getElementById('intentFilter').value;
+      const status = document.getElementById('statusFilter').value;
+      const errorBox = document.getElementById('errorBox');
+      errorBox.classList.add('hidden');
+      document.getElementById('leadsTable').innerHTML =
+        `<tr><td colspan="10" class="text-center py-12 text-gray-400"><div class="spinner mx-auto mb-2"></div>Loading…</td></tr>`;
+
+      try {
+        const p = new URLSearchParams({ limit: 200 });
+        if (intent) p.set('intent', intent);
+        if (status) p.set('status', status);
+        const resp = await fetch(`${API_BASE}/api/admin/tenant-portal/whatsapp-leads?${p}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.detail || `HTTP ${resp.status}`);
+        allLeads = data.leads || [];
+        renderTable(allLeads);
+        updateKPIs(allLeads);
+      } catch (err) {
+        if (String(err.message).includes('401')) { logout(); return; }
+        errorBox.textContent = err.message;
+        errorBox.classList.remove('hidden');
+        document.getElementById('leadsTable').innerHTML =
+          `<tr><td colspan="10" class="text-center py-8 text-red-500">Failed to load leads.</td></tr>`;
+      }
+    }
+
+    async function updateStatus(leadId, newStatus) {
+      const token = localStorage.getItem('tenantToken');
+      // Optimistic UI: disable buttons in that row
+      const actEl = document.getElementById(`actions-${leadId}`);
+      if (actEl) actEl.innerHTML = `<div class="spinner mx-auto"></div>`;
+
+      try {
+        const resp = await fetch(`${API_BASE}/api/admin/tenant-portal/whatsapp-leads/${leadId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ status: newStatus }),
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.detail || `HTTP ${resp.status}`);
+
+        const label = newStatus === 'confirmed' ? 'Confirmed ✓' : newStatus === 'cancelled' ? 'Cancelled ✕' : 'Updated';
+        toast(`${label} — WhatsApp notification queued 📲`, 'success');
+
+        // Patch local data and re-render row inline
+        const lead = allLeads.find(l => l.id === leadId);
+        if (lead) { lead.status = newStatus; }
+        const statusEl = document.getElementById(`status-${leadId}`);
+        if (statusEl) statusEl.innerHTML = `<span class="badge status-${newStatus}">${newStatus}</span>`;
+        if (actEl) {
+          const updated = allLeads.find(l => l.id === leadId) || { id: leadId, status: newStatus };
+          actEl.innerHTML = actionBtns(updated);
+        }
+        updateKPIs(allLeads);
+      } catch (err) {
+        toast('Failed: ' + err.message, 'error');
+        await loadLeads(); // refresh on error
+      }
+    }
+
+    async function editLead(leadId) {
+      const token = localStorage.getItem('tenantToken');
+      const lead = allLeads.find(item => item.id === leadId);
+      if (!lead) return;
+
+      const requested_date = prompt('Requested date', lead.requested_date || '');
+      if (requested_date === null) return;
+      const requested_time = prompt('Requested time', lead.requested_time || '');
+      if (requested_time === null) return;
+      const requested_persons = prompt('Requested persons', lead.requested_persons ?? '');
+      if (requested_persons === null) return;
+      const requested_type = prompt('Requested type', lead.requested_type || '');
+      if (requested_type === null) return;
+
+      try {
+        const resp = await fetch(`${API_BASE}/api/admin/tenant-portal/whatsapp-leads/${leadId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            requested_date,
+            requested_time,
+            requested_persons: requested_persons === '' ? null : Number(requested_persons),
+            requested_type,
+          }),
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.detail || `HTTP ${resp.status}`);
+
+        const index = allLeads.findIndex(item => item.id === leadId);
+        if (index >= 0) allLeads[index] = data;
+        renderTable(allLeads);
+        updateKPIs(allLeads);
+        toast('Lead updated', 'success');
+      } catch (err) {
+        toast('Failed: ' + err.message, 'error');
+        await loadLeads();
+      }
+    }
+
+    function exportCSV() {
+      const rows = [['Created','Contact','Intent','Date','Time','Persons','Type','Status']];
+      allLeads.forEach(l => rows.push([
+        fmtDate(l.created_at), l.phone_number, l.intent_type,
+        l.requested_date, l.requested_time, l.requested_persons,
+        l.requested_type, l.status
+      ]));
+      const csv = rows.map(r => r.map(v => `"${v ?? ''}"`).join(',')).join('\n');
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+      a.download = `whatsapp-leads-${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+    }
+
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+    document.getElementById('refreshBtn').addEventListener('click', loadLeads);
+    document.getElementById('intentFilter').addEventListener('change', loadLeads);
+    document.getElementById('statusFilter').addEventListener('change', loadLeads);
+    loadLeads();
+  </script>
+</body>
+</html>

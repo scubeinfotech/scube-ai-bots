@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SCUBE Infotech Production Widget Test</title>
+</head>
+<body>
+  <h1>SCUBE Infotech - Production Widget Test</h1>
+
+  <!-- ✅ THIS IS WHAT YOU WILL PUT ON scubeinfotech.com.sg -->
+  <script src="https://chat.scubeinfotech.com.sg/static/widget.js?v=1775437486"></script>
+  <script>
+    LLMChatbot.init({
+      apiUrl: 'https://chat.scubeinfotech.com.sg',
+      tenantId: 'fb8a4ec0-e463-4678-8178-32b8332db73a',
+      
+      // For testing only - you will replace this with your backend endpoint
+      tokenRefreshUrl: 'https://chat.scubeinfotech.com.sg/api/chat/token/fb8a4ec0-e463-4678-8178-32b8332db73a?demo=1'
+    });
+  </script>
+
+  <hr>
+  <h3>Backend Integration for your website:</h3>
+  <p>Create this single endpoint on scubeinfotech.com.sg server:</p>
+  <pre>
+// Example PHP backend endpoint /get-chatbot-token
+<?php
+header("Content-Type: application/json");
+header("Access-Control-Allow-Origin: https://scubeinfotech.com.sg");
+
+$ch = curl_init("https://chat.scubeinfotech.com.sg/api/chat/token/fb8a4ec0-e463-4678-8178-32b8332db73a");
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, [
+  "X-API-Key: 7NWUNtZbYHzV4xtV0iPl2BTjSNELvR1PiCAQAWJvZik",
+  "Content-Type: application/json"
+]);
+curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
+  "origin" => $_SERVER['HTTP_ORIGIN'] ?? $_SERVER['HTTP_HOST']
+]));
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+$response = curl_exec($ch);
+curl_close($ch);
+
+echo $response;
+?>
+  </pre>
+
+</body>
+</html>

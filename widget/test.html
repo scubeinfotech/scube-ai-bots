@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Chatbot Widget Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: #f9fafb;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 40px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1f2937;
+            margin-bottom: 10px;
+        }
+        .status {
+            padding: 16px;
+            background: #dbeafe;
+            border-radius: 6px;
+            margin: 20px 0;
+            color: #1e40af;
+        }
+        .code {
+            background: #f3f4f6;
+            border-radius: 6px;
+            padding: 16px;
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+        code {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Centralized LLM Platform - Widget Test</h1>
+        <p>This is a test page for the chatbot widget integration.</p>
+
+        <div class="status">
+            <strong>Status:</strong> Widget loaded and ready. Look for the chat button in the bottom-right corner.
+        </div>
+
+        <h2>Widget Integration Code</h2>
+        <p>To integrate the widget on your website, add this code:</p>
+        <div class="code">
+            <code>&lt;script src="https://your-domain.com/widget.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+LLMChatbot.init({
+  tenantId: 'your-tenant-id',
+  apiKey: 'your-api-key',
+  apiUrl: 'https://llm-api.your-domain.com',
+  theme: {
+    primaryColor: '#3b82f6'
+  }
+});
+&lt;/script&gt;</code>
+        </div>
+
+        <h2>Features</h2>
+        <ul>
+            <li>✅ Multi-tenant support</li>
+            <li>✅ Customizable theme</li>
+            <li>✅ Responsive design</li>
+            <li>✅ Message history</li>
+            <li>✅ API integration</li>
+        </ul>
+
+        <h2>Test the Widget</h2>
+        <p>The chat widget should appear in the bottom-right corner. Click to open and test it out!</p>
+        <button onclick="openChat()">Open Chat Widget</button>
+    </div>
+
+    <!-- Widget Script -->
+    <script src="src/widget.js"></script>
+
+    <script>
+        // Initialize widget for testing
+        document.addEventListener('DOMContentLoaded', function() {
+            LLMChatbot.init({
+                tenantId: 'c66e96d3-999c-4746-b11c-1758a9c2e982',
+                apiKey: 'test-api-key',
+                apiUrl: 'http://localhost:8001',
+                theme: {
+                    primaryColor: '#3b82f6',
+                    backgroundColor: '#ffffff',
+                    textColor: '#1f2937'
+                }
+            });
+        });
+
+        function openChat() {
+            const widget = document.getElementById('llm-chatbot-widget');
+            const toggleBtn = document.getElementById('llm-toggle-btn');
+            widget.style.display = 'block';
+            toggleBtn.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
