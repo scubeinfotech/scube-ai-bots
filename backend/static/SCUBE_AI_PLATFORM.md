@@ -2,6 +2,8 @@
 
 <img src="../backend/static/logo.svg" alt="SCUBE AI Logo" width="400"/>
 
+*A Product of **SCUBE Infotech Pte Ltd** — [scubeinfotech.com.sg](https://scubeinfotech.com.sg)*
+
 ---
 
 ## Executive Summary
