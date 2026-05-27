@@ -1,7 +1,7 @@
 # SCUBE AI — Intelligent Chatbot Platform
 
 <p align="center">
-  <img src="SCUBE-LOGO1.png" alt="SCUBE Infotech" width="120"/>
+  <img src="SCUBE-LOGO3.png" alt="SCUBE Infotech" width="120"/>
 </p>
 
 <img src="../backend/static/logo.svg" alt="SCUBE AI Logo" width="400"/>
