@@ -1034,6 +1034,7 @@ function adminDashboard() {
             candidates: [],
             candidateFilter: 'pending',
         },
+        _qualityChart: null,
 
         get tabTitle() {
             return { overview: 'Overview', tenants: 'Tenant Management', billing: 'Billing & Payments', quality: 'Quality Dashboard', settings: 'Settings' }[this.activeTab];
@@ -1569,7 +1570,9 @@ async init() {
                     this.quality.pendingCandidates = d.pending ?? 0;
                     this.quality.approvedChanges = d.approved ?? 0;
                 }
-            } catch { /* ignore */ }
+            } catch {
+                this.showToast('Failed to load quality summary', 'error');
+            }
         },
 
         async loadQualityTrend() {
@@ -1586,7 +1589,9 @@ async init() {
                     this.quality.failureCount = d.total_failure_patterns ?? 0;
                     this.renderQualityChart();
                 }
-            } catch { /* ignore */ } finally {
+            } catch {
+                this.showToast('Failed to load quality trend', 'error');
+            } finally {
                 this.quality.trendLoading = false;
             }
         },
@@ -1598,7 +1603,7 @@ async init() {
             })
             .then(r => r.json())
             .then(d => { this.quality.patterns = d.patterns || []; })
-            .catch(() => {})
+            .catch(() => { this.showToast('Failed to load failure patterns', 'error'); })
             .finally(() => { this.quality.patternsLoading = false; });
         },
 
@@ -1610,7 +1615,7 @@ async init() {
             })
             .then(r => r.json())
             .then(d => { this.quality.candidates = d.candidates || []; })
-            .catch(() => {})
+            .catch(() => { this.showToast('Failed to load candidates', 'error'); })
             .finally(() => { this.quality.candidatesLoading = false; });
         },
 
@@ -1677,7 +1682,7 @@ async init() {
                         this.pipelineRunning = false;
                         this.loadQualityTrend();
                         this.loadQualityPatterns();
-                        this.loadCandidates('pending');
+                        this.loadCandidates(this.quality.candidateFilter);
                         this.loadQualitySummary();
                         if (st.state === 'completed') {
                             this.showToast(`Pipeline done: ${st.total_scored} scored, ${st.total_candidates} candidates (${st.elapsed_seconds}s)`);
@@ -1686,8 +1691,12 @@ async init() {
                         }
                     }
                 }
-            } catch { /* ignore */ }
-        },
+                } catch {
+                    if (this.pipelineRunning) {
+                        this.showToast('Pipeline status check failed', 'error');
+                    }
+                }
+            },
 
         async runPipeline() {
             this.pipelineRunning = true;
@@ -1769,7 +1778,9 @@ async init() {
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
                 });
                 if (resp.ok) this.patternDetail = await resp.json();
-            } catch { /* ignore */ } finally {
+            } catch {
+                this.showToast('Failed to load pattern messages', 'error');
+            } finally {
                 this.patternLoading = false;
             }
         },

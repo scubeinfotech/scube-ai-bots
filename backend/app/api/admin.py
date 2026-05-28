@@ -5181,6 +5181,11 @@ async def quality_overview(
 
     since = date.today() - timedelta(days=days)
 
+    fp_query = db.query(FailurePattern).filter(FailurePattern.message_count > 0)
+    if tenant_id:
+        fp_query = fp_query.filter(FailurePattern.tenant_id == tenant_id)
+    total_failure_patterns = fp_query.count()
+
     query = db.query(QualityMetric).filter(
         QualityMetric.metric_date >= since,
         QualityMetric.period == "day",
@@ -5195,6 +5200,7 @@ async def quality_overview(
             "period_days": days,
             "tenant_id": tenant_id or "all",
             "data_points": 0,
+            "total_failure_patterns": total_failure_patterns,
             "trends": {
                 "dates": [],
                 "overall": [],
@@ -5233,6 +5239,7 @@ async def quality_overview(
         "period_days": days,
         "tenant_id": tenant_id or "all",
         "data_points": len(metrics),
+        "total_failure_patterns": total_failure_patterns,
         "trends": {
             "dates": [m.metric_date.isoformat() for m in metrics],
             "overall": [m.avg_overall_score or 0 for m in metrics],
