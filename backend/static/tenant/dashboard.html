@@ -120,13 +120,13 @@
                 <div class="flex items-center justify-between mb-2">
                     <h1 class="text-xl font-semibold" x-text="tabTitle"></h1>
                     <div class="flex items-center gap-4">
-                        <button @click="toggleTheme()" class="p-1.5 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition" title="Toggle theme">
+                        <button @click="toggleTheme()" class="p-1.5 rounded-lg transition" :class="theme === 'dark' ? 'hover:bg-white/10 text-gray-400 hover:text-white' : 'hover:bg-gray-200 text-gray-600 hover:text-gray-900'" title="Toggle theme">
                             <svg x-show="theme === 'dark'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                             <svg x-show="theme === 'light'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
                         </button>
-                        <span class="text-sm text-gray-400" x-text="tenantName"></span>
+                        <span class="text-sm" :class="theme === 'dark' ? 'text-gray-400' : 'text-gray-600'" x-text="tenantName"></span>
                         <div class="relative">
-                            <div @click="profileOpen = !profileOpen" class="w-8 h-8 bg-indigo-500/20 rounded-full flex items-center justify-center text-sm font-semibold text-indigo-400 cursor-pointer select-none" :class="{ 'ring-2 ring-indigo-400': profileOpen }" x-text="tenantName.charAt(0)"></div>
+                            <div @click="profileOpen = !profileOpen" class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold cursor-pointer select-none" :class="theme === 'dark' ? 'bg-indigo-500/20 text-indigo-400 ' + (profileOpen ? 'ring-2 ring-indigo-400' : '') : 'bg-indigo-500 text-white ' + (profileOpen ? 'ring-2 ring-indigo-600' : '')" x-text="tenantName.charAt(0)"></div>
                             <div x-show="profileOpen" @click.outside="profileOpen = false" x-cloak class="absolute right-0 mt-2 w-56 rounded-lg shadow-xl z-50 overflow-hidden" :class="theme === 'dark' ? 'bg-gray-900 border border-white/10' : 'bg-white border border-gray-200'">
                                 <div class="px-4 py-3 border-b" :class="theme === 'dark' ? 'border-white/10' : 'border-gray-200'">
                                     <p class="text-sm font-medium" :class="theme === 'dark' ? 'text-white' : 'text-gray-900'" x-text="tenantName"></p>
@@ -945,7 +945,7 @@
                                 <div class="space-y-3 max-h-[500px] overflow-y-auto pr-2">
                                     <template x-for="m in chatMessages" :key="m.id">
                                         <div class="flex" :class="m.sender_type === 'assistant' ? 'justify-end' : 'justify-start'">
-                                            <div class="max-w-[80%] p-3 rounded-xl text-sm" :class="m.sender_type === 'assistant' ? 'bg-indigo-500/20 text-indigo-200' : 'bg-white/10 text-gray-200'">
+                                            <div class="max-w-[80%] p-3 rounded-xl text-sm" :class="m.sender_type === 'assistant' ? (theme === 'dark' ? 'bg-indigo-500/20 text-indigo-200' : 'bg-indigo-100 text-indigo-800') : (theme === 'dark' ? 'bg-white/10 text-gray-200' : 'bg-gray-100 text-gray-800')">
                                                 <p x-text="m.content"></p>
                                                 <p class="text-xs mt-1 opacity-50" x-text="formatDateTime(m?.created_at)"></p>
                                             </div>
@@ -989,7 +989,7 @@
                                 <div class="space-y-3 max-h-[500px] overflow-y-auto pr-2">
                                     <template x-for="m in waContactMessages" :key="m.id">
                                         <div class="flex" :class="m.direction === 'outbound' ? 'justify-end' : 'justify-start'">
-                                            <div class="max-w-[80%] p-3 rounded-xl text-sm" :class="m.direction === 'outbound' ? 'bg-indigo-500/20 text-indigo-200' : 'bg-white/10 text-gray-200'">
+                                            <div class="max-w-[80%] p-3 rounded-xl text-sm" :class="m.direction === 'outbound' ? (theme === 'dark' ? 'bg-indigo-500/20 text-indigo-200' : 'bg-indigo-100 text-indigo-800') : (theme === 'dark' ? 'bg-white/10 text-gray-200' : 'bg-gray-100 text-gray-800')">
                                                 <p x-text="m.content"></p>
                                                 <p class="text-xs mt-1 opacity-50" x-text="formatDateTime(m?.created_at)"></p>
                                             </div>
@@ -2487,7 +2487,7 @@ function tenantDashboard() {
             this.pwdLoading = true;
             this.pwdError = '';
             try {
-                const resp = await fetch('/api/admin/reset-password', {
+                const resp = await fetch('/api/admin/tenant-portal/change-password', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

@@ -1713,6 +1713,38 @@ async def tenant_user_login(payload: TenantUserLogin, db: Session = Depends(get_
     }
 
 
+@router.post("/tenant-portal/change-password")
+async def tenant_portal_change_password(
+    request: dict,
+    authorization: Optional[str] = Header(default=None),
+    db: Session = Depends(get_db),
+):
+    """Tenant user password change from dashboard."""
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Authorization required")
+    token = authorization.split(" ", 1)[1]
+    data = decode_tenant_user_token(token)
+    if not data:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+    current_password = request.get("current_password")
+    new_password = request.get("new_password")
+    if not current_password or not new_password:
+        raise HTTPException(status_code=400, detail="Current and new password required")
+    if len(new_password) < 6:
+        raise HTTPException(status_code=400, detail="New password must be at least 6 characters")
+
+    user = db.query(TenantUser).filter(TenantUser.id == data["tenant_user_id"]).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not verify_password(current_password, user.hashed_password):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+    user.hashed_password = hash_password(new_password)
+    db.commit()
+    return {"message": "Password updated successfully"}
+
+
 @router.get("/tenant-portal/stats")
 async def tenant_portal_stats(authorization: Optional[str] = Header(default=None), db: Session = Depends(get_db)):
     """Tenant-facing stats endpoint (for tenant user login sessions)."""
